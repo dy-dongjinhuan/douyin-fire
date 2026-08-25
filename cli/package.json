@@ -1,0 +1,26 @@
+{
+  "name": "douyin-fire",
+  "version": "1.0.0",
+  "description": "抖音自动续火花 · 本地版一键启动器（npx 即装即用，免登录·永久会员）",
+  "bin": {
+    "douyin-fire": "bin/douyin-fire.js"
+  },
+  "files": [
+    "bin",
+    "lib"
+  ],
+  "engines": {
+    "node": ">=16"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dy-dongjinhuan/douyin-fire"
+  },
+  "keywords": [
+    "douyin",
+    "spark",
+    "cli",
+    "automation"
+  ]
+}
