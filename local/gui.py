@@ -10,6 +10,7 @@ import os
 import sys
 import threading
 import time
+import traceback
 import webbrowser
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -585,6 +586,22 @@ def mark_login_complete() -> str:
     return "请通过登录链接在真机完成登录"
 
 
+def _append_run_log(msg: str) -> None:
+    """把一条消息追加写入运行日志文件，供前端「运行日志」面板展示。
+
+    即使任务在真正进入 run() 之前就失败（例如缺少登录态、配置错误），
+    也能在日志面板里看到原因，而不是一直显示「暂无日志」。
+    """
+    try:
+        log_path = PROJECT_ROOT / "artifacts" / "run.log"
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        with open(log_path, "a", encoding="utf-8") as f:
+            f.write(f"{ts} ERROR {msg}\n")
+    except Exception:
+        pass
+
+
 async def do_run(dry_run: bool, user: str | None = None) -> None:
     """执行发送流程（按当前用户加载独立的登录态与配置，实现多租户隔离）"""
     global STOP_EVENT
@@ -605,6 +622,7 @@ async def do_run(dry_run: bool, user: str | None = None) -> None:
             with STATE_LOCK:
                 STATE["run_status"] = "failed"
                 STATE["run_message"] = msg
+            _append_run_log(msg)
             print(f"[RUN] 用户 {user} 缺少有效 Playwright storage state，中止执行")
             return
 
@@ -633,15 +651,18 @@ async def do_run(dry_run: bool, user: str | None = None) -> None:
         with STATE_LOCK:
             STATE["run_status"] = "failed"
             STATE["run_message"] = f"配置错误: {exc}"
+        _append_run_log(f"配置错误: {exc}")
     except RunStopped as exc:
         with STATE_LOCK:
             STATE["run_status"] = "success"
             STATE["run_message"] = "已手动停止，剩余好友未发送"
+        _append_run_log("已手动停止，剩余好友未发送")
         print(f"[RUN] 用户已手动停止发送任务: {exc}")
     except Exception as exc:
         with STATE_LOCK:
             STATE["run_status"] = "failed"
             STATE["run_message"] = f"运行异常: {exc}"
+        _append_run_log("运行异常: " + traceback.format_exc())
     finally:
         # 不论正常结束/异常/停止，都清空停止信号，避免影响下次运行
         STOP_EVENT = None

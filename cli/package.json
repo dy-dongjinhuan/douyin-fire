@@ -1,6 +1,6 @@
 {
   "name": "douyin-fire",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "抖音自动续火花 · 本地版一键启动器（npx 即装即用，免登录·永久会员）",
   "bin": {
     "douyin-fire": "bin/douyin-fire.js"

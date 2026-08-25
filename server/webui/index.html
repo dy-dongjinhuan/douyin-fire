@@ -764,11 +764,12 @@ document.querySelectorAll(".nav-item[data-nav]").forEach(function(a){
     document.querySelectorAll(".nav-item").forEach(n=>n.classList.remove("active"));
     a.classList.add("active");
     if(t) t.scrollIntoView({behavior:"smooth", block:"start"});
+    if (id === "sec-logs") refreshLogs();  // 切到「运行日志」面板时立即拉取一次
   });
 });
 
 buildTimePicker();
-setTimeout(() => { checkState(); refreshLogs(); setInterval(checkState, 5000); }, 10000);
+setTimeout(() => { checkState(); refreshLogs(); setInterval(() => { checkState(); refreshLogs(); }, 5000); }, 10000);
 </script>
 
 <script>
