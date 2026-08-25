@@ -1,0 +1,25 @@
+{
+  "friends": [],
+  "messages": [
+    {
+      "type": "text",
+      "value": "续火花"
+    }
+  ],
+  "send_interval_seconds": {
+    "min": 3,
+    "max": 8
+  },
+  "prevent_duplicates": false,
+  "target_open_retries": 1,
+  "target_open_timeout_seconds": 15,
+  "mail": {
+    "smtp_host": "smtp.resend.com",
+    "smtp_port": 587,
+    "smtp_user": "resend",
+    "smtp_pass": "",
+    "from": "noreply@dongdongclub.shop",
+    "use_ssl": false,
+    "use_tls": true
+  }
+}

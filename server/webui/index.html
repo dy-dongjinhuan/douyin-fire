@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23fe2c55' d='M12 2l2.2 6.6L21 11l-6.8 2.4L12 20l-2.2-6.6L3 11l6.8-2.4z'/%3E%3C/svg%3E">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>控制台 · 火花续连</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+  /* 兼容原 JS 的弹窗 / Toast 类（保留既有逻辑，不改动） */
+  #resultModal{ position:fixed; inset:0; z-index:200; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.6); backdrop-filter:blur(3px); }
+  #resultModal.show{ display:flex; }
+  .modal-card{ width:min(420px,92vw); background:var(--surface); border:1px solid var(--hairline-2); border-radius:var(--radius-lg); padding:26px; box-shadow:var(--shadow-pop); }
+  .modal-icon{ width:46px; height:46px; border-radius:14px; display:grid; place-items:center; margin-bottom:14px; background:var(--green-soft); color:var(--green); }
+  .modal-icon.err{ background:var(--red-soft); color:var(--red); }
+  .modal-title{ font-size:17px; font-weight:650; margin-bottom:8px; }
+  .modal-desc{ font-size:13.5px; color:var(--text-2); line-height:1.6; }
+  .modal-btn{ margin-top:18px; }
+  #toast{ position:fixed; left:50%; top:20px; transform:translateX(-50%) translateY(-12px); z-index:300; background:var(--surface-3); border:1px solid var(--hairline-2); color:var(--text); padding:11px 18px; border-radius:var(--radius-sm); font-size:13.5px; box-shadow:var(--shadow-2); opacity:0; transition:opacity .26s var(--ease), transform .26s var(--ease-spring); pointer-events:none; }
+  #toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  /* 顶部滚动进度细线 */
+  #scrollProgress{ position:fixed; top:0; left:0; height:2px; width:0; background:linear-gradient(90deg,var(--accent),#ff7a5c); z-index:999; transition:width .12s linear; }
+
+  /* 登录态指示点 */
+  .status-dot{ width:9px; height:9px; border-radius:50%; background:var(--text-3); display:inline-block; }
+  .status-dot.logged_in{ background:var(--green); box-shadow:0 0 0 3px var(--green-soft); }
+  .status-dot.not_logged_in{ background:var(--text-4); }
+  .status-dot.logging_in{ background:var(--amber); box-shadow:0 0 0 3px var(--amber-soft); }
+
+  .run-badge{ font-size:11.5px; font-weight:600; padding:3px 10px; border-radius:20px; border:1px solid var(--hairline-2); color:var(--text-2); }
+  .run-badge.running{ color:var(--green); border-color:rgba(61,220,132,.3); background:var(--green-soft); }
+  .run-badge.error{ color:var(--red); border-color:rgba(255,77,79,.3); background:var(--red-soft); }
+  .run-badge.idle{ color:var(--text-3); }
+
+  .kv{ display:flex; gap:18px; flex-wrap:wrap; margin-bottom:16px; }
+  .kv .item{ display:flex; flex-direction:column; gap:3px; }
+  .kv .k{ font-size:11.5px; color:var(--text-3); }
+  .kv .v{ font-size:14px; font-weight:600; }
+
+  .friend-toolbar{ display:flex; align-items:center; gap:10px; margin-bottom:14px; flex-wrap:wrap; }
+  .friend-count{ font-size:12.5px; color:var(--text-3); margin-left:auto; }
+
+  /* 时间选择器 */
+  .timepicker{ position:relative; }
+  .tp-trigger{ width:100%; display:flex; align-items:center; gap:10px; padding:11px 13px; border-radius:var(--radius-sm); background:var(--bg-2); border:1px solid var(--hairline-2); color:var(--text); font-size:13.5px; cursor:pointer; }
+  .tp-trigger.open{ border-color:var(--accent-line); box-shadow:0 0 0 3px var(--accent-soft); }
+  .tp-pop{ position:absolute; top:calc(100% + 8px); left:0; z-index:60; background:var(--surface-2); border:1px solid var(--hairline-2); border-radius:var(--radius); box-shadow:var(--shadow-pop); padding:14px; display:grid; grid-template-columns:auto auto; gap:14px; opacity:0; transform:translateY(-6px) scale(.98); pointer-events:none; transition:opacity .18s var(--ease), transform .18s var(--ease-spring); }
+  .tp-pop.open{ opacity:1; transform:none; pointer-events:auto; }
+  .tp-col{ max-height:200px; overflow:auto; width:64px; border:1px solid var(--hairline); border-radius:10px; background:var(--bg-2); }
+  .tp-opt{ padding:8px 0; text-align:center; font-size:13.5px; cursor:pointer; border-radius:8px; }
+  .tp-opt:hover{ background:var(--hover); }
+  .tp-opt.sel{ background:var(--accent); color:#fff; }
+
+  .sidebar-backdrop{ display:none; }
+  @media(max-width:820px){ .sidebar-backdrop.show{ display:block; } }
+
+  /* 侧边栏底部：返回官网 */
+  .side-home{ display:flex; align-items:center; gap:8px; margin-top:10px; padding:8px 12px; border-radius:8px; color:var(--text-3); font-size:12.5px; transition:background .15s,color .15s; }
+  .side-home:hover{ background:var(--surface-2); color:var(--text); }
+  .sidebar.collapsed .side-home{ justify-content:center; padding:8px 0; }
+  .sidebar.collapsed .side-home span{ display:none; }
+
+  /* 文案条目（高端风：默认×按钮半透明，hover 浮现；按钮 hover 红色描边） */
+  .msg-item{ position:relative; padding:14px 42px 14px 44px; border:1px solid var(--hairline); background:var(--bg-2); border-radius:var(--radius-sm); margin-bottom:10px; transition:border-color .18s, background .18s; }
+  .msg-item:hover{ border-color:var(--hairline-strong); background:var(--surface); }
+  .msg-item .msg-idx{ position:absolute; top:14px; left:12px; width:22px; height:22px; display:grid; place-items:center; border-radius:7px; background:var(--surface-2); color:var(--text-3); font-size:11.5px; font-weight:600; border:1px solid var(--hairline); }
+  .msg-item .msg-input{ background:transparent; border:none; padding:0; resize:vertical; min-height:64px; font-size:13.5px; line-height:1.6; }
+  .msg-item .msg-input:focus{ background:transparent; box-shadow:none; border:none; }
+  .msg-item .msg-del{ position:absolute; top:12px; right:12px; width:30px; height:30px; display:grid; place-items:center; border:1px solid var(--hairline); background:var(--surface-2); border-radius:9px; cursor:pointer; color:var(--text-3); opacity:.5; transition:opacity .18s var(--ease), background .18s, color .18s, border-color .18s, transform .14s var(--ease-spring); }
+  .msg-item:hover .msg-del{ opacity:1; }
+  .msg-item .msg-del:hover{ background:var(--red-soft); border-color:rgba(255,77,79,.45); color:var(--red); transform:scale(1.06); }
+  .msg-item .msg-del:active{ transform:scale(.95); }
+  .msg-item .msg-del svg{ display:block; }
+
+  /* 好友手动粘贴框（同步未启用时的主要入口） */
+  .friend-paste{ margin-top:14px; }
+  .friend-paste label{ display:block; font-size:12.5px; color:var(--text-2); margin-bottom:7px; font-weight:500; }
+  .friend-paste textarea.input{ min-height:72px; line-height:1.7; font-size:13px; }
+
+  /* ===== 从登录页移植的动效（一模一样） ===== */
+  /* 3D 透视容器 + 面板 tilt 基础 */
+  /* 3D 透视容器 + 面板 tilt 基础
+     （perspective 必须设在 .panel 的直接父级 .content 上才生效，
+       放 .main 上因隔了 .content 导致 rotateX 无透视效果） */
+  .content{ perspective:1100px; perspective-origin:center center; }
+  .panel{
+    position:relative;
+    /* 不用 preserve-3d：透视由父级 .content 提供即可，
+       preserve-3d 会强制面板内所有子元素进入 3D 渲染上下文，每帧重合成整个子树 → 卡顿元凶 */
+    transition: box-shadow 0.35s ease;
+  }
+  /* 仅在 hover 时才申请合成层，避免常驻 will-change 占 GPU/内存导致卡顿 */
+  .panel:hover{ will-change:transform; }
+  /* 面板标题辉光 */
+  .panel-head h2{ animation:titleGlow 3.2s ease-in-out infinite; }
+  @keyframes titleGlow{
+    0%,100%{ text-shadow:0 0 10px rgba(255,55,95,.22); }
+    50%{ text-shadow:0 0 22px rgba(255,55,95,.50); }
+  }
+  /* 滚动进度条：流动渐变（与登录一致） */
+  #scrollProgress{
+    height:3px;
+    background:linear-gradient(90deg,var(--accent),#ff8aa6,var(--accent));
+    background-size:220% 100%;
+    box-shadow:0 0 10px rgba(255,55,95,.7);
+    animation:progressFlow 2.4s linear infinite;
+  }
+  @keyframes progressFlow{ to{ background-position:220% 0; } }
+  /* 面板 hover 流动渐变描边 */
+  .panel::after{
+    content:""; position:absolute; inset:0; border-radius:inherit;
+    padding:1.5px; pointer-events:none; opacity:0;
+    background:linear-gradient(120deg,#ff375f,#ff9ab2,#ff375f,#ff9ab2);
+    background-size:300% 300%;
+    -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite:xor; mask-composite:exclude;
+    transition:opacity .35s ease;
+    animation:borderFlow 3.5s linear infinite;
+  }
+  .panel:hover::after{ opacity:1; }
+  @keyframes borderFlow{ to{ background-position:300% 0; } }
+  /* 运行日志面板：关闭 3D 上下文，确保内部滚动正常 */
+  #sec-logs{ transform-style:flat; }
+  #sec-logs .logs{ overflow-y:auto; overscroll-behavior:contain; }
+  @media(prefers-reduced-motion:reduce){
+    #scrollProgress,.panel::after{ animation:none !important; }
+    .panel-head h2{ animation:none !important; }
+  }
+</style>
+</head>
+<body class="app">
+
+<!-- 图标精灵 -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <g id="i-spark"><path fill="currentColor" d="M12 2l2.2 6.6L21 11l-6.8 2.4L12 20l-2.2-6.6L3 11l6.8-2.4z"/></g>
+    <g id="i-users"><path fill="none" stroke="currentColor" stroke-width="2" d="M16 19v-1a4 4 0 00-4-4H6a4 4 0 00-4 4v1M9 11a4 4 0 100-8 4 4 0 000 8zM22 19v-1a4 4 0 00-3-3.87M16 4.13A4 4 0 0119 8a4 4 0 01-3 3.87"/></g>
+    <g id="i-clock"><path fill="none" stroke="currentColor" stroke-width="2" d="M12 7v5l3 2"/><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/></g>
+    <g id="i-mail"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 5h16v14H4zM4 6l8 6 8-6"/></g>
+    <g id="i-gear"><circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="2"/><path fill="none" stroke="currentColor" stroke-width="2" d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></g>
+    <g id="i-doc"><path fill="none" stroke="currentColor" stroke-width="2" d="M7 3h7l4 4v14H7zM14 3v4h4"/></g>
+    <g id="i-save"><path fill="none" stroke="currentColor" stroke-width="2" d="M5 4h12l3 3v13H5zM8 4v5h7M8 20v-6h8v6"/></g>
+    <g id="i-flask"><path fill="none" stroke="currentColor" stroke-width="2" d="M9 3h6M10 3v6l-5 9a2 2 0 002 3h10a2 2 0 002-3l-5-9V3"/></g>
+    <g id="i-send"><path fill="none" stroke="currentColor" stroke-width="2" d="M21 3L3 11l7 3 3 7z"/></g>
+    <g id="i-stop"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"/></g>
+    <g id="i-card"><rect x="3" y="6" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path stroke="currentColor" stroke-width="2" d="M3 10h18"/></g>
+    <g id="i-check"><path fill="none" stroke="currentColor" stroke-width="2.4" d="M20 6L9 17l-5-5"/></g>
+    <g id="i-cross"><path fill="none" stroke="currentColor" stroke-width="2" d="M18 6L6 18M6 6l12 12"/></g>
+    <g id="i-menu"><path fill="none" stroke="currentColor" stroke-width="2" d="M3 6h18M3 12h18M3 18h18"/></g>
+    <g id="i-logout"><path fill="none" stroke="currentColor" stroke-width="2" d="M14 4h4v16h-4M10 8l-4 4 4 4M6 12h12"/></g>
+    <g id="i-refresh"><path fill="none" stroke="currentColor" stroke-width="2" d="M20 11a8 8 0 10-2 6M20 5v6h-6"/></g>
+    <g id="i-home"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 11l8-7 8 7M6 10v10h12V10"/></g>
+    <g id="i-chart"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 20V4M4 20h16M8 16v-5M12 16V8M16 16v-3"/></g>
+    <g id="i-sync"><path fill="none" stroke="currentColor" stroke-width="2" d="M20 11a8 8 0 00-14-4M4 13a8 8 0 0014 4M18 3v5h-5M6 21v-5h5"/></g>
+    <g id="i-list"><path fill="none" stroke="currentColor" stroke-width="2" d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></g>
+    <g id="i-shield"><path fill="none" stroke="currentColor" stroke-width="2" d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/></g>
+    <g id="i-bolt"><path fill="currentColor" d="M13 2L4 14h6l-1 8 9-12h-6z"/></g>
+    <g id="i-trash"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6m5 5v6m4-6v6"/></g>
+  </defs>
+</svg>
+
+<div id="scrollProgress"></div>
+<div class="sidebar-backdrop"></div>
+
+<!-- 侧边栏 -->
+<aside class="sidebar" id="sidebar">
+  <div class="brand">
+    <div class="brand-mark"><svg viewBox="0 0 24 24" width="18" height="18"><use href="#i-spark"/></svg></div>
+    <div class="brand-text">
+      <div class="brand-name">火花续连</div>
+      <div class="brand-sub">Douyin Spark</div>
+    </div>
+  </div>
+  <nav class="nav">
+    <div class="nav-group-label">工作台</div>
+    <a class="nav-item active" data-nav="home"><span class="ni-ico"><svg viewBox="0 0 24 24" width="20" height="20"><use href="#i-home"/></svg></span><span class="ni-label">控制台</span></a>
+    <a class="nav-item" data-nav="friends"><span class="ni-ico"><svg viewBox="0 0 24 24" width="20" height="20"><use href="#i-users"/></svg></span><span class="ni-label">好友管理</span><span class="ni-badge" id="navFriendCount">0</span></a>
+    <a class="nav-item" data-nav="logs"><span class="ni-ico"><svg viewBox="0 0 24 24" width="20" height="20"><use href="#i-doc"/></svg></span><span class="ni-label">运行日志</span></a>
+    <div class="nav-group-label">设置</div>
+    <a class="nav-item" data-nav="schedule"><span class="ni-ico"><svg viewBox="0 0 24 24" width="20" height="20"><use href="#i-clock"/></svg></span><span class="ni-label">定时任务</span></a>
+    <a class="nav-item" data-nav="account"><span class="ni-ico"><svg viewBox="0 0 24 24" width="20" height="20"><use href="#i-gear"/></svg></span><span class="ni-label">账号与会员</span></a>
+    <a class="nav-item" id="adminLink" href="/admin" style="display:none"><span class="ni-ico"><svg viewBox="0 0 24 24" width="20" height="20"><use href="#i-shield"/></svg></span><span class="ni-label">管理后台</span></a>
+  </nav>
+  <div class="side-foot">
+    <div class="side-user">
+      <div class="av" id="sideAv">U</div>
+      <div class="meta">
+        <div class="un" id="sideUser">未登录</div>
+        <div class="rl" id="sideRole">—</div>
+      </div>
+    </div>
+    <a class="side-home" href="/" title="回到官网主页"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-home"/></svg><span>返回官网</span></a>
+  </div>
+</aside>
+
+<!-- 主区域 -->
+<div class="main">
+  <header class="topbar">
+    <button class="icon-btn" data-sidebar-toggle title="收起/展开侧边栏"><svg viewBox="0 0 24 24" width="20" height="20"><use href="#i-menu"/></svg></button>
+    <div class="page-title">控制台</div>
+    <div class="spacer"></div>
+    <div class="status-pill"><span class="dot" id="statusDot"></span><span id="statusText">未知</span></div>
+    <button class="btn ghost sm" onclick="doLogout()"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-logout"/></svg>退出</button>
+  </header>
+
+  <div class="content">
+    <!-- 账号与登录 -->
+    <section class="panel mb-3" id="sec-account">
+      <div class="panel-head">
+        <div class="ico-badge accent"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-gear"/></svg></div>
+        <h2>账号与登录</h2>
+        <span class="spacer"></span>
+        <span class="tag" id="expiryText" style="display:none"></span>
+      </div>
+      <div class="panel-body">
+        <div class="kv">
+          <div class="item"><span class="k">当前用户</span><span class="v" id="currentUser" style="display:none">—</span></div>
+          <div class="item"><span class="k">抖音登录态</span><span class="v" id="statusText2">—</span></div>
+        </div>
+        <p class="hint">使用 Cookie-Editor 导出抖音登录态 JSON 后粘贴上传，或在手机端打开登录链接回传。</p>
+        <textarea id="cookieInput" class="input" rows="3" placeholder="粘贴 Cookie-Editor 导出的 JSON 数组，例如：[{&#10;  &#34;name&#34;: &#34;sessionid&#34;, &#34;value&#34;: &#34;...&#34;&#10;}]"></textarea>
+        <div class="row mt-2 wrap gap-2">
+          <button class="btn primary" onclick="injectCookie()"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-save"/></svg>上传登录态</button>
+          <button class="btn ghost" onclick="clearCookieInput()">清空文本框</button>
+          <button class="btn ghost" id="douyinLogoutBtn" style="display:none" onclick="logoutDouyin()">退出抖音登录</button>
+        </div>
+        <div id="savedCookieBar" class="message success mt-2" style="display:none">
+          已保存 <b id="savedCookieCount">0</b> 条 Cookie，保存时间：<span id="savedCookieTime"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 会员 -->
+    <section class="panel mb-3" id="sec-vip">
+      <div class="panel-head"><div class="ico-badge"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-card"/></svg></div><h2>会员状态</h2></div>
+      <div class="panel-body">
+        <p class="mb-2" id="vipStatusText">未开通会员</p>
+        <div id="vipWarning" class="message warn" style="display:none">会员已到期，请续费后继续使用。</div>
+        <div class="row gap-2 wrap">
+          <input id="renewCode" class="input" style="max-width:240px" placeholder="输入卡密续费">
+          <button class="btn primary" id="renewBtn" onclick="doRenew()"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-card"/></svg>续费 / 开通</button>
+        </div>
+        <p class="hint" id="renewHint">在「管理后台」获取卡密后，在此粘贴即可延长使用时长。</p>
+      </div>
+    </section>
+
+    <!-- 好友列表（手动添加方式，回归原版） -->
+    <section class="panel mb-3" id="sec-friends">
+      <div class="panel-head"><div class="ico-badge accent"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-users"/></svg></div><h2>好友列表</h2><span class="spacer"></span><span class="tag blue" id="selectedCount" style="display:none">已选 0</span></div>
+      <div class="panel-body">
+        <label for="friendsInput" style="display:block; font-size:12.5px; color:var(--text-2); margin-bottom:7px; font-weight:500;">好友昵称（每行一个）：</label>
+        <textarea id="friendsInput" class="input" rows="8" placeholder="每行一个好友昵称，例如：&#10;用户01&#10;用户02&#10;用户03"></textarea>
+        <p class="hint">每行一个好友昵称，不要有空行或多余空格。保存配置后即生效。</p>
+        <!-- 以下为兼容原 JS 的隐藏元素（勿删）：好友网格 / 同步工具栏 -->
+        <div class="friend-toolbar" style="display:none">
+          <button class="btn sm" id="syncFriendsBtn" onclick="syncFriends()">从抖音同步互关好友</button>
+          <button class="btn sm ghost" onclick="selectAllFriends(true)">全选</button>
+          <button class="btn sm ghost" onclick="selectAllFriends(false)">全不选</button>
+          <span class="friend-count" id="friendCount">共 0 位互关好友</span>
+        </div>
+        <div class="friend-grid" id="friendGrid" style="display:none"></div>
+      </div>
+    </section>
+
+    <!-- 发送内容 -->
+    <section class="panel mb-3" id="sec-msg">
+      <div class="panel-head"><div class="ico-badge"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-mail"/></svg></div><h2>发送内容</h2><span class="spacer"></span><button class="btn sm ghost" id="addMsgBtn" onclick="addMsgBox()">＋ 添加文案</button></div>
+      <div class="panel-body">
+        <div id="messagesWrap">
+          <div class="msg-item"><span class="msg-idx">1</span><textarea class="msg-input input" rows="3" placeholder="例如：续火花"></textarea><button class="msg-del" type="button" title="删除这条文案" aria-label="删除这条文案" onclick="removeMsgBox(this)"><svg viewBox="0 0 24 24" width="14" height="14"><use href="#i-trash"/></svg></button></div>
+        </div>
+        <p class="hint">可添加最多 5 条不同文案，发送时每个好友随机选用其中一条。</p>
+      </div>
+    </section>
+
+    <!-- 定时任务 -->
+    <section class="panel mb-3" id="sec-schedule">
+      <div class="panel-head"><div class="ico-badge"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-clock"/></svg></div><h2>定时续火花</h2></div>
+      <div class="panel-body">
+        <div class="row gap-2 wrap">
+          <div class="toggle" id="scheduleToggle" onclick="toggleSchedule()"></div>
+          <span id="scheduleToggleText">已关闭</span>
+          <span class="muted">每天</span>
+          <div class="timepicker" id="timepicker">
+            <div class="tp-trigger" id="tpTrigger"><span id="tpValue">00:00</span></div>
+            <div class="tp-pop" id="tpPop">
+              <div class="tp-col" id="tpHours"></div>
+              <div class="tp-col" id="tpMins"></div>
+            </div>
+          </div>
+          <input type="time" id="scheduleTime" value="00:00" style="display:none">
+          <button class="btn primary" onclick="saveSchedule()"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-save"/></svg>保存</button>
+        </div>
+        <p class="hint">开启后，每天到达设定时间会自动向已选好友发送续火花消息。</p>
+      </div>
+    </section>
+
+    <!-- 操作 -->
+    <section class="panel mb-3" id="sec-ops">
+      <div class="panel-head"><div class="ico-badge"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-gear"/></svg></div><h2>操作</h2></div>
+      <div class="panel-body">
+        <div class="row gap-2 wrap">
+          <button class="btn success" onclick="saveConfig()"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-save"/></svg>保存配置</button>
+          <button class="btn warning" onclick="doRun(true)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-flask"/></svg>干跑验证</button>
+          <button class="btn primary" onclick="doRun(false)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-send"/></svg>正式发送</button>
+        </div>
+        <p class="hint mt-2"><b>干跑验证</b>：只检查登录和好友定位，不真实发送消息。<br><b>正式发送</b>：向已选好友发送消息，请谨慎操作。</p>
+      </div>
+    </section>
+
+    <!-- 运行日志 -->
+    <section class="panel mb-3" id="sec-logs">
+      <div class="panel-head"><div class="ico-badge"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-doc"/></svg></div><h2>运行日志</h2><span class="spacer"></span><span class="run-badge idle" id="runStatusBadge">空闲中</span><button class="btn sm ghost" onclick="refreshLogs(true)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-refresh"/></svg>刷新</button></div>
+      <div class="panel-body">
+        <div class="logs" id="logsContainer">暂无日志</div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- 结果弹窗 -->
+<div id="resultModal">
+  <div class="modal-card">
+    <div class="modal-icon" id="modalIcon"><svg viewBox="0 0 24 24"><use href="#i-check"/></svg></div>
+    <div class="modal-title" id="modalTitle">成功</div>
+    <div class="modal-desc" id="modalDesc"></div>
+    <button class="modal-btn btn primary" onclick="hideModal()">好的</button>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script src="uikit.js"></script>
+<script>
+let currentState = {};
+let qrPollTimer = null;
+let _configLoaded = false;
+let _lastRunStatus = null;
+
+function showModal(ok, title, desc) {
+  const icon = document.getElementById("modalIcon");
+  icon.className = "modal-icon " + (ok ? "ok" : "err");
+  icon.innerHTML = '<svg viewBox="0 0 24 24"><use href="#i-' + (ok ? "check" : "cross") + '"/></svg>';
+  document.getElementById("modalTitle").textContent = title;
+  document.getElementById("modalDesc").textContent = desc || "";
+  document.getElementById("resultModal").classList.add("show");
+}
+function hideModal() { document.getElementById("resultModal").classList.remove("show"); }
+
+let toastTimer = null;
+function showToast(text) {
+  const t = document.getElementById("toast");
+  t.textContent = text; t.classList.add("show");
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 1800);
+}
+
+async function fetchJSON(url, options = {}) {
+  const opts = Object.assign({ credentials: "include" }, options);
+  const resp = await fetch(url, opts);
+  if (resp.status === 401 && location.pathname !== "/app") { location.href = "/login"; throw new Error("登录已过期"); }
+  try { return await resp.json(); } catch (e) { throw new Error("服务器返回了非 JSON 响应 (HTTP " + resp.status + ")"); }
+}
+
+async function doLogout() {
+  try { await fetch("/api/auth/logout", { method: "POST", credentials: "include" }); } catch (err) {}
+  location.href = "/login";
+}
+
+async function logoutDouyin() {
+  if (!confirm("确定要退出抖音登录吗？这将删除本账号保存的抖音 Cookie，服务器将无法再自动发送消息。")) return;
+  try {
+    const d = await fetchJSON("/api/login-logout", { method: "POST", credentials: "include" });
+    if (d.ok) { showModal(true, "已退出抖音登录", (d.removed && d.removed.length ? "已删除：" + d.removed.join("、") : "Cookie 已删除")); checkState(true, true); }
+    else { showMessage("error", d.error || "退出失败"); }
+  } catch (err) { showMessage("error", "退出失败: " + err.message); }
+}
+
+async function checkState(showToastOnDone = false, reloadConfig = false) {
+  try {
+    const state = await fetchJSON("/api/state");
+    currentState = state;
+    if (reloadConfig) _configLoaded = false;
+    updateUI(state);
+    if (showToastOnDone) showToast("状态已刷新");
+  } catch (err) { showMessage("error", "获取状态失败: " + err.message); }
+}
+
+function updateRunBadge(state) {
+  const badge = document.getElementById("runStatusBadge");
+  if (!badge) return;
+  const s = state && state.run_status;
+  let label, cls;
+  if (s === "running") { label = "运行中"; cls = "running"; }
+  else if (s === "failed") { label = "异常"; cls = "error"; }
+  else { label = "空闲中"; cls = "idle"; }
+  badge.textContent = label;
+  badge.className = "run-badge " + cls;
+}
+
+function updateUI(state) {
+  const dot = document.getElementById("statusDot");
+  const text = document.getElementById("statusText");
+  dot.className = "status-dot " + state.login_status;
+  updateRunBadge(state);
+
+  const userEl = document.getElementById("currentUser");
+  const _ui = document.getElementById("userIco");
+  if (state.username) {
+    userEl.textContent = state.username; userEl.style.display = "inline";
+    if (_ui) _ui.style.display = "inline-block";
+    document.getElementById("sideUser").textContent = state.username;
+    document.getElementById("sideAv").textContent = state.username.slice(0,1).toUpperCase();
+  } else { userEl.style.display = "none"; if (_ui) _ui.style.display = "none"; }
+
+  const expEl = document.getElementById("expiryText");
+  const vipText = document.getElementById("vipStatusText");
+  const vipWarn = document.getElementById("vipWarning");
+  const roleEl = document.getElementById("sideRole");
+
+  // 本地版（DEPLOY_MODE=local）：免登录免会员，隐藏会员面板/退出/管理后台/返回官网
+  if (state.mode === "local") {
+    const vipSec = document.getElementById("sec-vip");
+    if (vipSec) vipSec.style.display = "none";
+    const topLogout = document.querySelector('.topbar .btn[onclick="doLogout()"]');
+    if (topLogout) topLogout.style.display = "none";
+    const adminLink = document.getElementById("adminLink");
+    if (adminLink) adminLink.style.display = "none";
+    const sideHome = document.querySelector(".side-home");
+    if (sideHome) sideHome.style.display = "none";
+    expEl.style.display = "none";
+    if (vipText) vipText.textContent = "本地版 · 永久有效";
+    if (vipWarn) vipWarn.style.display = "none";
+    if (roleEl) roleEl.textContent = "本地模式";
+    const sideUser = document.getElementById("sideUser");
+    if (sideUser) sideUser.textContent = "本地用户";
+    // 会员/续费相关的状态处理提前返回，不执行下面的服务器版逻辑
+  } else if (state.role === "admin") {
+    expEl.textContent = "管理员"; expEl.style.display = "inline";
+    vipText.textContent = "管理员（永久有效）"; vipWarn.style.display = "none";
+    if (roleEl) roleEl.textContent = "管理员";
+  } else if (state.expires_at) {
+    expEl.textContent = "有效期至 " + state.expires_at; expEl.style.display = "inline";
+    vipText.textContent = "有效期至 " + state.expires_at;
+    const exp = new Date(state.expires_at.replace("T", " "));
+    const expired = !isNaN(exp.getTime()) && exp.getTime() < Date.now();
+    vipWarn.style.display = expired ? "block" : "none";
+    if (roleEl) roleEl.textContent = "会员用户";
+  } else {
+    expEl.style.display = "none"; vipText.textContent = "未开通会员"; vipWarn.style.display = "none";
+    if (roleEl) roleEl.textContent = "普通用户";
+  }
+
+  if (state.mode !== "local") {
+    document.getElementById("adminLink").style.display = state.role === "admin" ? "inline-block" : "none";
+  }
+
+  const statusMap = { "unknown":"未知", "logged_in":"已登录", "not_logged_in":"未登录", "logging_in":"登录中..." };
+  text.textContent = statusMap[state.login_status] || state.login_status;
+  const st2 = document.getElementById("statusText2"); if (st2) st2.textContent = statusMap[state.login_status] || state.login_status;
+
+  const douyinLogoutBtn = document.getElementById("douyinLogoutBtn");
+  if (douyinLogoutBtn) douyinLogoutBtn.style.display = (state.login_status === "logged_in") ? "inline-block" : "none";
+
+  if (state.login_status === "logged_in") {
+    fetchJSON("/api/cookie-info").then(info => { if (info && info.count > 0) showSavedCookieBar(info.count, info.saved_at ? new Date(info.saved_at) : null); }).catch(() => {});
+  } else { const bar = document.getElementById("savedCookieBar"); if (bar) bar.style.display = "none"; }
+
+  if (state.config && !_configLoaded) {
+    document.getElementById("friendsInput").value = (state.config.friends || []).join("\n");
+    renderFriendGrid();
+    const msgs = state.config.messages || [];
+    const vals = msgs.map(m => (m && m.value) ? m.value : "").filter(Boolean);
+    renderMessages(vals);
+    _configLoaded = true;
+  }
+
+  if (state.schedule) {
+    const toggle = document.getElementById("scheduleToggle");
+    const toggleText = document.getElementById("scheduleToggleText");
+    if (state.schedule.enabled) { toggle.classList.add("on"); toggleText.textContent = "已开启"; } else { toggle.classList.remove("on"); toggleText.textContent = "已关闭"; }
+    setTime(state.schedule.time || "00:00");
+  }
+
+  // 日志按需刷新：仅当运行状态发生变化（开始/结束 = 有数据产生）时拉取日志，不做实时轮询
+  if (state.run_status !== _lastRunStatus) {
+    _lastRunStatus = state.run_status;
+    if (state.run_status === "running" || state.run_status === "success" || state.run_status === "failed") refreshLogs();
+  }
+
+  const runId = state.run_id != null ? state.run_id : 0;
+  let shownRunId = null;
+  try { shownRunId = localStorage.getItem("douyin_run_modal_shown"); } catch (e) {}
+  const alreadyShown = String(shownRunId) === String(runId) && runId !== 0;
+  if (state.run_status === "running") { /* 仅徽标展示 */ }
+  else if ((state.run_status === "success" || state.run_status === "failed") && !alreadyShown) {
+    const isDry = (state.run_message || "").includes("干跑") || (state.run_message || "").includes("验证");
+    if (state.run_status === "success") {
+      const isStop = (state.run_message || "").includes("停止") || (state.run_message || "").includes("已手动");
+      if (isStop) showModal(true, "已手动停止", state.run_message);
+      else showModal(true, isDry ? "验证成功" : "发送成功", state.run_message);
+    } else { showModal(false, isDry ? "验证失败" : "发送失败", state.run_message); }
+    try { localStorage.setItem("douyin_run_modal_shown", String(runId)); } catch (e) {}
+  }
+}
+
+/* 日志增量渲染：只追加新增行，不整段重绘（避免所有行重复播放入场动画导致割裂） */
+let _renderedLogLines = 0;
+function renderLogs(logs) {
+  const container = document.getElementById("logsContainer");
+  if (!container || !logs || logs.length === 0) return;
+  // 服务端日志轮转/清空导致返回行数比已渲染的少 → 重置后全量渲染
+  if (logs.length < _renderedLogLines) _renderedLogLines = 0;
+  // 首屏：清掉 "暂无日志" 占位文本
+  if (_renderedLogLines === 0) container.innerHTML = "";
+  const fresh = logs.slice(_renderedLogLines);
+  if (!fresh.length) return;
+  const frag = document.createDocumentFragment();
+  fresh.forEach(line => {
+    const timeMatch = line.match(/^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/);
+    const time = timeMatch ? timeMatch[1] : "";
+    const raw = timeMatch ? line.substring(time.length).trim() : line;
+    const rest = raw.replace(/^(INFO|WARNING|ERROR)\s+/i, "");
+    let cls = "log-info"; let tag = "520 love";
+    if (raw.includes("执行结束")) { cls = "log-error"; tag = "521 love"; }
+    else if (raw.includes("ERROR") || raw.includes("失败") || raw.toLowerCase().includes("error") || raw.includes("Traceback") || raw.includes("异常") || raw.includes("失效")) { cls = "log-error"; tag = "250 sb"; }
+    const div = document.createElement("div");
+    div.className = "log-line";
+    div.innerHTML = `<span class="log-time">${time}</span> <span class="${cls}">[${tag}] ${rest}</span>`;
+    frag.appendChild(div);
+  });
+  container.appendChild(frag);
+  _renderedLogLines = logs.length;
+  container.scrollTop = container.scrollHeight;
+  // 只给最新一行加高亮（清除旧高亮）
+  const _lines = container.querySelectorAll(".log-line");
+  _lines.forEach(l => l.classList.remove("log-new"));
+  if (_lines.length) _lines[_lines.length - 1].classList.add("log-new");
+}
+
+function showMessage(type, text) {
+  if (type === "error" || type === "warning" || type === "warn") showModal(false, "提示", text);
+  else if (type === "success") showModal(true, "操作成功", text);
+  else showModal(true, "提示", text);
+}
+
+async function injectCookie() {
+  const input = document.getElementById("cookieInput");
+  const raw = (input.value || "").trim();
+  if (!raw) { showMessage("error", "请先粘贴 Cookie-Editor 导出的 JSON"); return; }
+  let parsed;
+  try { parsed = JSON.parse(raw); } catch (e) { showMessage("error", "JSON 解析失败：" + e.message); return; }
+  let count = 0;
+  if (Array.isArray(parsed)) count = parsed.length;
+  else if (parsed && Array.isArray(parsed.cookies)) count = parsed.cookies.length;
+  try {
+    const d = await fetchJSON("/api/login-upload", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ cookies: parsed }) });
+    if (d.ok) { showSavedCookieBar(count, new Date()); checkState(true, true); }
+    else { showMessage("error", d.error || "注入失败"); }
+  } catch (err) { showMessage("error", "注入失败: " + err.message); }
+}
+
+function clearCookieInput() {
+  const input = document.getElementById("cookieInput");
+  input.value = "";
+  showToast("已清空本地文本框（服务器 Cookie 不受影响）");
+}
+
+function showSavedCookieBar(count, date) {
+  const bar = document.getElementById("savedCookieBar");
+  if (!bar) return;
+  document.getElementById("savedCookieCount").textContent = count || 0;
+  document.getElementById("savedCookieTime").textContent = date ? date.toLocaleString("zh-CN") : "";
+  bar.style.display = "block";
+}
+
+function toggleSchedule() {
+  const toggle = document.getElementById("scheduleToggle");
+  const toggleText = document.getElementById("scheduleToggleText");
+  toggle.classList.toggle("on");
+  if (toggle.classList.contains("on")) { toggleText.textContent = "已开启"; showToast("定时任务已开启（记得点保存）"); }
+  else { toggleText.textContent = "已关闭"; showToast("定时任务已关闭（记得点保存）"); }
+}
+
+async function saveSchedule() {
+  const toggle = document.getElementById("scheduleToggle");
+  const time = document.getElementById("scheduleTime").value;
+  const schedule = { enabled: toggle.classList.contains("on"), time: time };
+  try {
+    await fetchJSON("/api/schedule", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(schedule) });
+    const statusText = schedule.enabled ? `已开启，每天 ${schedule.time} 自动续火花` : "已关闭定时续火花";
+    showModal(true, "保存成功", statusText);
+    checkState();
+  } catch (err) { showModal(false, "保存失败", err.message); }
+}
+
+const MAX_MSGS = 5;
+function refreshMsgUI() {
+  const wrap = document.getElementById("messagesWrap");
+  const items = wrap.querySelectorAll(".msg-item");
+  items.forEach((it, i) => { const idx = it.querySelector(".msg-idx"); if (idx) idx.textContent = String(i + 1); });
+  const btn = document.getElementById("addMsgBtn");
+  const atMax = items.length >= MAX_MSGS;
+  btn.disabled = atMax; btn.title = atMax ? "已达上限 5 条" : "添加一条文案（最多 5 条）";
+}
+function buildMsgItem(value, index) {
+  const item = document.createElement("div"); item.className = "msg-item";
+  const idx = document.createElement("span"); idx.className = "msg-idx"; idx.textContent = String(index + 1);
+  const ta = document.createElement("textarea"); ta.className = "msg-input input"; ta.rows = 3; ta.placeholder = "例如：续火花"; ta.value = value || "";
+  const del = document.createElement("button"); del.type = "button"; del.className = "msg-del"; del.title = "删除这条文案"; del.setAttribute("aria-label", "删除这条文案");
+  del.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14"><use href="#i-trash"/></svg>';
+  del.setAttribute("onclick", "removeMsgBox(this)");
+  item.appendChild(idx); item.appendChild(ta); item.appendChild(del); return item;
+}
+function renderMessages(values) {
+  const wrap = document.getElementById("messagesWrap"); wrap.innerHTML = "";
+  const arr = (values && values.length) ? values : [""];
+  arr.slice(0, MAX_MSGS).forEach((v, i) => wrap.appendChild(buildMsgItem(v, i)));
+  refreshMsgUI();
+}
+function collectMessages() { return [...document.querySelectorAll("#messagesWrap .msg-input")].map(t => t.value.trim()).filter(Boolean); }
+function addMsgBox() {
+  const wrap = document.getElementById("messagesWrap");
+  const items = wrap.querySelectorAll(".msg-item");
+  if (items.length >= MAX_MSGS) return;
+  wrap.appendChild(buildMsgItem("", items.length)); refreshMsgUI();
+  const inputs = wrap.querySelectorAll(".msg-input"); if (inputs.length) inputs[inputs.length - 1].focus();
+}
+function removeMsgBox(btn) {
+  const wrap = document.getElementById("messagesWrap");
+  if (wrap.querySelectorAll(".msg-item").length <= 1) return;
+  const item = btn.closest(".msg-item"); if (item) item.remove(); refreshMsgUI();
+}
+
+/* ===== 好友可视化多选 ===== */
+const AV_GRADIENTS = ["linear-gradient(135deg,#fe2c55,#ff7a5c)","linear-gradient(135deg,#5b9dff,#7be0c8)","linear-gradient(135deg,#a06bff,#ff6bd0)","linear-gradient(135deg,#ffb020,#ff7a5c)","linear-gradient(135deg,#3ddc84,#5b9dff)"];
+function avColor(name){ let h=0; for(const c of name) h=(h*31+c.charCodeAt(0))%AV_GRADIENTS.length; return AV_GRADIENTS[h]; }
+function getSelectedFriends(){ return (document.getElementById("friendsInput").value||"").split("\n").map(s=>s.trim()).filter(Boolean); }
+/* textarea 手动编辑时同步刷新卡片网格 */
+document.getElementById("friendsInput").addEventListener("input", renderFriendGrid);
+function renderFriendGrid(){
+  const names = getSelectedFriends();
+  const grid = document.getElementById("friendGrid");
+  grid.innerHTML = "";
+  names.forEach(function(name){
+    const card = document.createElement("div");
+    card.className = "friend-card sel";
+    card.innerHTML = '<div class="fc-av" style="background:'+avColor(name)+'">'+name.slice(0,1)+'</div>'+
+      '<div style="min-width:0"><div class="fc-name">'+name+'</div><div class="fc-meta">已加入续连</div></div>'+
+      '<div class="fc-check"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></div>';
+    card.onclick = function(){ card.classList.toggle("sel"); syncFriendsInputFromGrid(); };
+    grid.appendChild(card);
+  });
+  updateFriendCounters();
+}
+function syncFriendsInputFromGrid(){
+  const grid = document.getElementById("friendGrid");
+  const names = [...grid.children].filter(c=>c.classList.contains("sel")).map(c=>c.querySelector(".fc-name").textContent);
+  document.getElementById("friendsInput").value = names.join("\n");
+  updateFriendCounters();
+}
+function updateFriendCounters(){
+  const all = getSelectedFriends().length;
+  const sel = [...document.getElementById("friendGrid").children].filter(c=>c.classList.contains("sel")).length;
+  document.getElementById("friendCount").textContent = "共 "+all+" 位互关好友";
+  document.getElementById("selectedCount").textContent = "已选 "+sel;
+  document.getElementById("navFriendCount").textContent = all;
+}
+function selectAllFriends(on){
+  [...document.getElementById("friendGrid").children].forEach(c=>c.classList.toggle("sel", on));
+  syncFriendsInputFromGrid();
+}
+async function syncFriends(){
+  const btn = document.getElementById("syncFriendsBtn");
+  const old = btn.innerHTML; btn.disabled = true; btn.innerHTML = '同步中…';
+  try{
+    const d = await fetchJSON("/api/friends/sync", { method:"POST", credentials:"include" });
+    if(d && d.ok){
+      const list = (d.friends||[]).filter(Boolean);
+      document.getElementById("friendsInput").value = list.join("\n");
+      renderFriendGrid();
+      showModal(true, "同步完成", "已识别 "+list.length+" 位互关好友，默认全部选中。");
+    } else if(d && d.manual){
+      showMessage("info", d.error || "无法自动识别，请手动填写昵称。");
+    } else {
+      showMessage("error", (d&&d.error)||"同步失败");
+    }
+  }catch(err){ showMessage("error", "同步失败: "+err.message); }
+  finally{ btn.disabled=false; btn.innerHTML = old; }
+}
+
+async function saveConfig() {
+  const friends = document.getElementById("friendsInput").value.split("\n").map(s => s.trim()).filter(s => s);
+  const messages = collectMessages();
+  if (friends.length === 0) { showMessage("error", "请至少选择一个好友"); return; }
+  if (messages.length === 0) { showMessage("error", "请填写发送内容"); return; }
+  const config = { friends: friends, messages: messages.map(value => ({ type: "text", value })), send_interval_seconds: { min: 3, max: 8 }, prevent_duplicates: false, target_open_retries: 5, target_open_timeout_seconds: 15 };
+  try {
+    await fetchJSON("/api/config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(config) });
+    checkState(); showModal(true, "配置已保存", "好友列表与发送内容已更新");
+  } catch (err) { showMessage("error", "保存失败: " + err.message); }
+}
+
+async function doRun(dryRun) {
+  const action = dryRun ? "干跑验证" : "正式发送";
+  const sel = getSelectedFriends().length;
+  if (!dryRun && !confirm(`确认要${action}吗？这将向 ${sel} 位已选好友发送消息。`)) return;
+  try {
+    await fetchJSON("/api/run", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ dry_run: dryRun }) });
+    setTimeout(() => { checkState(); refreshLogs(); }, 1000);
+    const interval = setInterval(() => { checkState(); refreshLogs(); if (currentState.run_status !== "running") clearInterval(interval); }, 2000);
+  } catch (err) { showMessage("error", `启动${action}失败: ` + err.message); }
+}
+
+async function refreshLogs(showToastOnDone = false) {
+  try {
+    const data = await fetchJSON("/api/logs");
+    if (data.logs && data.logs.length > 0) renderLogs(data.logs);
+    if (showToastOnDone) showToast("日志已刷新");
+  } catch (err) { console.error("加载日志失败:", err); }
+}
+
+async function doRenew() {
+  const code = document.getElementById("renewCode").value.trim();
+  if (!code) { showMessage("error", "请输入卡密"); return; }
+  const btn = document.getElementById("renewBtn"); btn.disabled = true; btn.textContent = "处理中...";
+  try {
+    const resp = await fetch("/api/auth/renew", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ code }) });
+    const data = await resp.json();
+    if (resp.ok && data.ok) { document.getElementById("renewCode").value = ""; checkState(); showModal(true, "续费开通成功", "新有效期：" + (data.expires_at || "永久")); }
+    else { showMessage("error", data.error || "续费失败"); }
+  } catch (err) { showMessage("error", "续费失败: " + err.message); }
+  finally { btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-card"/></svg>续费 / 开通'; }
+}
+
+/* ===== 自定义时间选择器 ===== */
+function buildTimePicker(){
+  const h = document.getElementById("tpHours"), m = document.getElementById("tpMins");
+  for(let i=0;i<24;i++){ const d=document.createElement("div"); d.className="tp-opt"; d.dataset.h=i; d.textContent=String(i).padStart(2,"0"); d.onclick=()=>pickTime(); h.appendChild(d); }
+  for(let i=0;i<60;i+=5){ const d=document.createElement("div"); d.className="tp-opt"; d.dataset.m=i; d.textContent=String(i).padStart(2,"0"); d.onclick=()=>pickTime(); m.appendChild(d); }
+  const trig=document.getElementById("tpTrigger"), pop=document.getElementById("tpPop");
+  trig.onclick=(e)=>{ e.stopPropagation(); pop.classList.toggle("open"); trig.classList.toggle("open"); };
+  pop.addEventListener("click", e=>e.stopPropagation());
+  document.addEventListener("click", ()=>{ pop.classList.remove("open"); trig.classList.remove("open"); });
+}
+function pickTime(){
+  const hSel=document.querySelector("#tpHours .tp-opt.sel"), mSel=document.querySelector("#tpMins .tp-opt.sel");
+  if(hSel&&mSel){ setTime(String(hSel.dataset.h).padStart(2,"0")+":"+String(mSel.dataset.m).padStart(2,"0")); }
+}
+function setTime(val){
+  document.getElementById("scheduleTime").value = val;
+  document.getElementById("tpValue").textContent = val;
+  const [hh,mm]=val.split(":");
+  document.querySelectorAll("#tpHours .tp-opt").forEach(o=>o.classList.toggle("sel", o.dataset.h==+hh));
+  document.querySelectorAll("#tpMins .tp-opt").forEach(o=>o.classList.toggle("sel", o.dataset.m==+mm));
+}
+
+/* 侧边栏导航高亮 + 平滑滚动到区块 */
+document.querySelectorAll(".nav-item[data-nav]").forEach(function(a){
+  a.addEventListener("click", function(e){
+    e.preventDefault();
+    const id = "sec-"+a.dataset.nav;
+    const t = document.getElementById(id);
+    document.querySelectorAll(".nav-item").forEach(n=>n.classList.remove("active"));
+    a.classList.add("active");
+    if(t) t.scrollIntoView({behavior:"smooth", block:"start"});
+  });
+});
+
+buildTimePicker();
+setTimeout(() => { checkState(); refreshLogs(); setInterval(checkState, 5000); }, 10000);
+</script>
+
+<script>
+(function () {
+  /* 顶部滚动进度细线（纯原生实现，不依赖任何 CDN） */
+  const bar = document.getElementById("scrollProgress");
+  if (bar) {
+    const upd = function () {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop || document.body.scrollTop) / max * 100 : 0) + "%";
+    };
+    window.addEventListener("scroll", upd, { passive: true });
+    window.addEventListener("resize", upd);
+    upd();
+  }
+})();
+</script>
+
+<!-- GSAP 本地自托管（bootcdn 下载，国内可达；动效增强，绝不影响内容可见性） -->
+<script src="gsap.min.js"></script>
+<script>
+(function () {
+  if (typeof gsap === "undefined") return;
+  const RM = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (RM) return;
+  /* 入场编排：侧边栏左滑 → 顶栏下落 → 导航项依次淡入
+     （面板不做 GSAP 入场：它的 transform 交给登录同款 3D 旋动，避免过渡冲突） */
+  const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
+  tl.fromTo(".sidebar", { x: -28, autoAlpha: 0 }, { x: 0, autoAlpha: 1, duration: 0.5, clearProps: "x" })
+    .fromTo(".topbar", { y: -18, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.45 }, "-=0.30")
+    .fromTo(".nav-item", { x: -10, autoAlpha: 0 }, { x: 0, autoAlpha: 1, duration: 0.35, stagger: 0.04 }, "-=0.6");
+  /* 状态点呼吸 */
+  gsap.to(".dot", { scale: 1.3, duration: 0.9, yoyo: true, repeat: -1, ease: "sine.inOut" });
+})();
+</script>
+
+<!-- 登录页同款 3D 跟随鼠标旋动（移植，纯原生不依赖 CDN） -->
+<script>
+(function () {
+  const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const isTouch = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+  if (reduce || isTouch) return; // 无障碍/触屏不启用倾斜
+
+  const MAX = 2; // 最大倾斜角度：控制台面板宽，2° 足够且不夸张
+  // 事件委托到 .content 而不是每个 panel 自身：
+  // ① 避免鼠标移到按钮上时 transform 持续改写导致按钮漂移点不中；
+  // ② 鼠标落在可交互元素（按钮/输入框）上时跳过倾斜，保证可点击。
+  const content = document.querySelector(".content");
+  if (!content) return;
+  const INTERACTIVE = "button, input, textarea, select, a, label, .select, .datepicker, .toggle, .msg-del";
+  let active = null;
+  let raf = null;
+  let curX = 0, curY = 0, tgtX = 0, tgtY = 0;
+  // 鼠标坐标（mousemove 高频事件里只存坐标，不碰 DOM/布局）
+  let mx = 0, my = 0;
+  // 面板尺寸缓存：进入新面板时才取一次 getBoundingClientRect（避免每帧同步布局）
+  let panelRect = null;
+
+  function apply() {
+    raf = null;
+    if (!active) return;
+    // 每次 rAF 只取一次布局信息（而非每次 mousemove 都取）
+    if (!panelRect) panelRect = active.getBoundingClientRect();
+    const r = panelRect;
+    const px = (mx - r.left) / r.width;   // 0~1
+    const py = (my - r.top) / r.height;   // 0~1
+    // 方向（已修正）：鼠标靠右 → 右缘朝前；鼠标靠下 → 下缘朝前
+    tgtY = (px - 0.5) * 2 * MAX;      // 绕 Y 轴（左右）
+    // 宽高比补偿：面板宽而矮，同样的角度 rotateX 视觉位移比 rotateY 小
+    const aspect = Math.min(3, Math.max(0.5, r.width / r.height));
+    tgtX = -(py - 0.5) * 2 * MAX * aspect;  // 绕 X 轴（上下）
+    // lerp 平滑跟随
+    curX += (tgtX - curX) * 0.32;
+    curY += (tgtY - curY) * 0.32;
+    const dx = Math.abs(curX - tgtX), dy = Math.abs(curY - tgtY);
+    if (dx < 0.02 && dy < 0.02) { curX = tgtX; curY = tgtY; }
+    active.style.transform = "rotateX(" + curX.toFixed(2) + "deg) rotateY(" + curY.toFixed(2) + "deg)";
+    if (dx > 0.02 || dy > 0.02) raf = requestAnimationFrame(apply);
+    else panelRect = null; // 收敛后释放缓存，下次移动重新取
+  }
+  function onMove(e) {
+    const card = e.target.closest(".panel");
+    if (!card || card.querySelector(".logs")) return;
+    if (e.target.closest(INTERACTIVE)) {
+      // 交互元素（按钮/输入框）上：不倾斜，但要让面板平滑复位到 0°，
+      // 否则面板停在半倾斜状态 + 按钮 hover 重绘会叠在一起导致卡顿。
+      if (active && (tgtX !== 0 || tgtY !== 0)) {
+        tgtX = tgtY = 0;
+        if (!raf) raf = requestAnimationFrame(apply);
+      }
+      return;
+    }
+    if (active !== card) { // 切换面板：复位旧的，并刷新面板尺寸缓存
+      if (active) active.style.transform = "rotateX(0deg) rotateY(0deg)";
+      panelRect = null;
+    }
+    active = card;
+    mx = e.clientX; my = e.clientY; // 只存坐标，apply 里 rAF 帧内再算
+    if (!raf) raf = requestAnimationFrame(apply);
+  }
+  function resetAll() {
+    if (active) { active.style.transform = "rotateX(0deg) rotateY(0deg)"; }
+    active = null; curX = curY = tgtX = tgtY = 0; panelRect = null;
+    if (raf) { cancelAnimationFrame(raf); raf = null; }
+  }
+  content.addEventListener("mousemove", onMove);
+  content.addEventListener("mouseleave", resetAll);
+  // 鼠标离开当前面板（进入空白/其它区域）时复位
+  document.addEventListener("mousemove", function (e) {
+    if (active && !e.target.closest(".panel")) resetAll();
+  });
+})();
+</script>
+</body>
+</html>
