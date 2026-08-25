@@ -52,16 +52,19 @@ _DOM_SNAPSHOT_JS = """() => {
     placeholder: el.getAttribute('placeholder'),
     role: el.getAttribute('role'),
     aria_label: el.getAttribute('aria-label'),
+    id: el.getAttribute('id'),
+    class_name: el.getAttribute('class'),
   });
   return {
     inputs: Array.from(document.querySelectorAll('input')).map(attrs),
     textareas: Array.from(document.querySelectorAll('textarea')).map(attrs),
     contenteditable_count: document.querySelectorAll('[contenteditable="true"]').length,
     role_textbox_count: document.querySelectorAll('[role="textbox"]').length,
+    frame_count: window.frames ? window.frames.length : 0,
   };
 }"""
 
-_SAFE_ELEMENT_KEYS = ("tag", "type", "placeholder", "role", "aria_label")
+_SAFE_ELEMENT_KEYS = ("tag", "type", "placeholder", "role", "aria_label", "id", "class_name")
 
 
 @dataclass

@@ -17,11 +17,20 @@ RISK_MARKERS = (
     'text=验证身份',
 )
 SEARCH_INPUTS = (
+    # 现有：基于 placeholder / aria-label 包含「搜索」文本（抖音未改版时命中）
     'input[placeholder*="搜索"]',
     'input[placeholder="搜索"]',  # 精确匹配备用 selector，兼容慢渲染时属性值变化
     '[role="textbox"][placeholder*="搜索"]',
     'input[aria-label*="搜索"]',
     '[role="textbox"][aria-label*="搜索"]',
+    # 兜底：抖音改版后去掉 placeholder/aria-label 文案时，按结构（class 含 search）命中。
+    # 仅作用于 input/textarea/contenteditable，避免误匹配「搜索」按钮等无关元素。
+    'input[class*="search" i]',
+    'textarea[class*="search" i]',
+    '[contenteditable][class*="search" i]',
+    'input[class*="SearchInput" i]',
+    '[role="textbox"][class*="search" i]',
+    'input[id*="search" i]',
 )
 CHAT_PANEL_MARKERS = (
     '[class*="RightPanelHeader"]',
