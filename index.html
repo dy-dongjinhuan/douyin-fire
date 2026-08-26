@@ -146,14 +146,14 @@
     position:relative; z-index:2;
     max-width:1280px; margin:0 auto;
     display:grid;
-    grid-template-columns:1fr;
+    grid-template-columns:1.04fr .96fr;
     gap:64px;
     align-items:center;
-    padding:80px 36px 140px;
+    padding:80px 36px 120px;
   }
   /* 粒子火花 logo（hero 中央装饰） */
   .spark-logo{ position:absolute; z-index:1; pointer-events:none; left:50%; top:52%; transform:translate(-50%,-50%); width:520px; height:520px; opacity:.9; }
-  .hero-left{ position:relative; z-index:2; max-width:760px; margin:0 auto; text-align:center; }
+  .hero-left, .hero-right{ position:relative; z-index:2; }
 
   .eyebrow{
     display:inline-flex; align-items:center; gap:9px;
@@ -182,11 +182,11 @@
   }
   .hero p.desc{
     font-size:16.5px; color:rgba(255,255,255,.64);
-    max-width:56ch; line-height:1.78; margin:0 auto 14px;
+    max-width:52ch; line-height:1.78; margin:0 0 14px;
   }
   .hero p.desc + p.desc{ margin-bottom:36px; }
 
-  .cta{ display:flex; gap:12px; flex-wrap:wrap; align-items:center; justify-content:center; }
+  .cta{ display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
 
   /* ============ 按钮（涟漪 + 悬浮 + 按压动效） ============ */
   .btn{
@@ -369,6 +369,8 @@
   @media(max-width:900px){
     .hero{ grid-template-columns:1fr; gap:48px; padding:64px 24px 90px; }
     .hero h1{ font-size:44px; }
+    .hero-right{ order:-1; }
+    .terminal{ max-width:540px; }
     .spark-logo{ width:360px; height:360px; }
   }
   @media(max-width:640px){
@@ -404,6 +406,8 @@
       </a>
 
       <nav class="nav-menu" id="navMenu">
+        <a href="https://github.com/dy-dongjinhuan/douyin-fire" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://www.npmjs.com/package/douyin-fire" target="_blank" rel="noopener">NPM</a>
         <a href="#cap">核心能力</a>
         <a href="#how">工作原理</a>
         <a href="#trust">信任与安全</a>
@@ -417,6 +421,8 @@
     </div>
 
     <div class="mobile-menu" id="mobileMenu">
+      <a href="https://github.com/dy-dongjinhuan/douyin-fire" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://www.npmjs.com/package/douyin-fire" target="_blank" rel="noopener">NPM</a>
       <a href="#cap">核心能力</a>
       <a href="#how">工作原理</a>
       <a href="#trust">信任与安全</a>
@@ -428,13 +434,49 @@
     <canvas class="spark-logo" id="spark"></canvas>
 
     <div class="hero-left">
-      <span class="eyebrow enter d1"><span class="pulse"></span> Douyin Fire 服务器版</span>
+      <span class="eyebrow enter d1"><span class="pulse"></span> Douyin Fire 本地版</span>
       <h1 class="enter d2">让每一段<span class="em">火花</span>，<br>都不被遗忘。</h1>
       <p class="desc enter d3">火花续连帮你安静地维系抖音里那些重要的人。设置一次，每天自动续上火花——没有打扰，没有遗忘，只有被认真对待的关系。</p>
       <p class="desc enter d3">一键启动、免登录本地运行，登录态与好友列表只保存在你自己的设备上。</p>
       <div class="cta enter d4">
-        <a href="/app" class="btn btn-primary">前往控制台</a>
+        <a href="https://github.com/dy-dongjinhuan/douyin-fire" target="_blank" rel="noopener" class="btn btn-primary">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+          查看 GitHub
+        </a>
+        <a href="https://www.npmjs.com/package/douyin-fire" target="_blank" rel="noopener" class="btn btn-secondary">
+          <svg viewBox="0 0 24 24" fill="#CB3837"><path d="M1.763 0C.786 0 0 .786 0 1.763v20.474C0 23.214.786 24 1.763 24h20.474c.977 0 1.763-.786 1.763-1.763V1.763C24 .786 23.214 0 22.237 0zM5.13 5.323l13.837.019-.009 13.836h-3.464l.01-10.382h-3.456L12.04 19.17H5.113z"/></svg>
+          NPM 包
+        </a>
         <a href="#how" class="btn btn-ghost">了解原理 →</a>
+      </div>
+    </div>
+
+    <div class="hero-right enter d5">
+      <div class="terminal">
+        <div class="terminal-tabs">
+          <button class="active" data-tab="use">一键使用</button>
+          <button data-tab="install">一键安装</button>
+        </div>
+        <div class="terminal-body">
+          <div class="tab-content active" data-tab="use">
+            <div class="line">
+              <div class="cmd"><span class="prompt">$</span><span class="code" data-cmd="npx douyin-fire">npx douyin-fire</span></div>
+              <button class="copy-btn" aria-label="复制">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                <span>复制</span>
+              </button>
+            </div>
+          </div>
+          <div class="tab-content" data-tab="install">
+            <div class="line">
+              <div class="cmd"><span class="prompt">$</span><span class="code" data-cmd="npm install -g douyin-fire">npm install -g douyin-fire</span></div>
+              <button class="copy-btn" aria-label="复制">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                <span>复制</span>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -541,7 +583,7 @@
           <p style="color:var(--ink-3);font-size:13px;line-height:1.6;margin:0">让每一段火花，都不被时间吹灭。</p>
         </div>
         <div class="col"><h5>产品</h5><a href="#cap">核心能力</a><a href="#how">工作原理</a><a href="#trust">信任与安全</a></div>
-        <div class="col"><h5>资源</h5><a href="/app">前往控制台</a></div>
+        <div class="col"><h5>资源</h5><a href="https://github.com/dy-dongjinhuan/douyin-fire" target="_blank" rel="noopener">GitHub</a><a href="https://www.npmjs.com/package/douyin-fire" target="_blank" rel="noopener">NPM</a></div>
       </div>
       <div class="fine">
         <span>© 2026 火花续连 · 用心维系每一段关系</span>
@@ -842,6 +884,34 @@
         glow.style.opacity = 0;
         card.style.transform = 'perspective(800px) rotateX(0deg) rotateY(0deg) scale(1)';
         card.style.transition = 'transform 0.4s ease-out';
+      });
+    });
+  })();
+
+  // ============ 5. 终端 Tab + 复制 ============
+  (function(){
+    var tabs = document.querySelectorAll('.terminal-tabs button');
+    var contents = document.querySelectorAll('.tab-content');
+    tabs.forEach(function(tab){
+      tab.addEventListener('click', function(){
+        var key = tab.getAttribute('data-tab');
+        tabs.forEach(function(b){ b.classList.toggle('active', b === tab); });
+        contents.forEach(function(c){ c.classList.toggle('active', c.getAttribute('data-tab') === key); });
+      });
+    });
+    document.querySelectorAll('.copy-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var code = btn.closest('.tab-content').querySelector('.code');
+        var text = code ? code.getAttribute('data-cmd') : '';
+        function done(){
+          var span = btn.querySelector('span');
+          var old = span.textContent;
+          span.textContent = '已复制';
+          setTimeout(function(){ span.textContent = old; }, 1500);
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText){
+          navigator.clipboard.writeText(text).then(done).catch(done);
+        } else { done(); }
       });
     });
   })();
