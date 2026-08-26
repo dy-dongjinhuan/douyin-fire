@@ -5,9 +5,10 @@
 
 **Douyin Fire** 是一个用于**自动给抖音好友「续火花」**的可视化面板：内置 Web 控制台，配合 Playwright 驱动浏览器，按计划给你的抖音好友发送消息 / 表情 / 图片，保持每日互动、避免火花熄灭。
 
-- 官网：https://dy-dongjinhuan.github.io/douyin-fire/
+- 官网：https://dy-dongjinhuan.github.io/douyin-fire/local.html
 - npm：`npm i -g douyin-fire`
 - 仓库：`server/`（服务器部署版）、`local/`（本地部署版）、`npm/`（npm 版，即本地部署版）
+- 服务器版演示网址：https://dy-dongjinhuan.github.io/douyin-fire/
 
 ---
 
