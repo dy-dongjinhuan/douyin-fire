@@ -64,13 +64,13 @@ REM ---------- launch ----------
 echo [5/5] Starting service...
 if not defined ADMIN_USER set "ADMIN_USER=admin"
 if not defined ADMIN_PASSWORD set "ADMIN_PASSWORD=admin"
-set "FREE_MODE=1"
+set "DEPLOY_MODE=server"
 echo.
 echo   URL : http://127.0.0.1:8765/
-echo   Mode: FREE (no login needed, permanent)
+echo   Mode: SERVER (登录 + 会员)
 echo.
 
-start "DouyinFire" cmd /c "set GUI_HOST=127.0.0.1&& set GUI_PORT=8765&& set FREE_MODE=1&& set ADMIN_USER=%ADMIN_USER%&& set ADMIN_PASSWORD=%ADMIN_PASSWORD%&& cd /d %CD%&& venv\Scripts\python gui.py"
+start "DouyinFire" cmd /c "set GUI_HOST=127.0.0.1&& set GUI_PORT=8765&& set DEPLOY_MODE=server&& set ADMIN_USER=%ADMIN_USER%&& set ADMIN_PASSWORD=%ADMIN_PASSWORD%&& cd /d %CD%&& venv\Scripts\python gui.py"
 
 echo   Waiting for service...
 timeout /t 5 /nobreak >nul

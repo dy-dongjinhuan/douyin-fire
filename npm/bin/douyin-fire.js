@@ -87,7 +87,7 @@ function start() {
     ADMIN_USER: process.env.ADMIN_USER || 'admin',
     ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || 'admin',
   });
-  log(`启动面板： http://${opt.host}:${opt.port}/  （FREE_MODE 免登录，默认永久）`);
+  log(`启动面板： http://${opt.host}:${opt.port}/  （local 本地模式：免登录，永久会员）`);
   const p = spawn(venvPy, ['gui.py'], { cwd: PKG, env, stdio: 'inherit' });
   p.on('error', (e) => { err('启动失败：', e.message); process.exit(1); });
   p.on('exit', (code) => { if (code !== 0 && code !== null) err('进程退出，代码', code); });
