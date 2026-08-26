@@ -1,0 +1,44 @@
+/* =========================================================
+   douyin-fire 通用动效层 · effects.css
+   按钮磁性 / 涟漪 / 卡片 3D tilt 光晕 / 入场动画 / 焦点环
+   非侵入式：只增不强改，类名前缀 fx- 避免冲突
+   ========================================================= */
+
+/* 卡片光晕层（配合 JS 的 tilt 跟随） */
+.fx-glow{
+  position:absolute; inset:0; border-radius:inherit;
+  pointer-events:none; opacity:0;
+  transition:opacity .3s ease; z-index:1;
+}
+
+/* 涟漪 */
+.fx-ripple{
+  position:absolute; border-radius:50%; pointer-events:none;
+  background:rgba(255,255,255,.35); transform:scale(0);
+  animation:fx-ripple .6s ease-out forwards;
+}
+@keyframes fx-ripple{ to{ transform:scale(2.6); opacity:0; } }
+
+/* 入场动画（元素加 class="fx-enter" 触发） */
+.fx-enter{
+  opacity:0; transform:translateY(16px);
+  animation:fx-enter .7s cubic-bezier(.22,.61,.36,1) forwards;
+}
+@keyframes fx-enter{ to{ opacity:1; transform:none; } }
+.fx-d1{ animation-delay:.06s; } .fx-d2{ animation-delay:.14s; }
+.fx-d3{ animation-delay:.22s; } .fx-d4{ animation-delay:.30s; }
+
+/* 焦点环（键盘可达性） */
+button:focus-visible, a:focus-visible, .btn:focus-visible,
+input:focus-visible, select:focus-visible, textarea:focus-visible{
+  outline:2px solid #ff5c7c; outline-offset:2px;
+}
+
+/* 卡片 hover 微抬升（与 tilt 并存时不冲突，transform 由 JS 接管） */
+.fx-lift{ transition:transform .25s cubic-bezier(.22,.61,.36,1), box-shadow .25s ease; }
+
+/* 减弱动画偏好：关闭入场与 tilt 位移 */
+@media(prefers-reduced-motion:reduce){
+  .fx-enter{ animation:none; opacity:1; transform:none; }
+  .fx-ripple{ animation:none; }
+}

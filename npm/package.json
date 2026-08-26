@@ -1,6 +1,6 @@
 {
   "name": "douyin-fire",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "抖音续火花管理面板 · 本地一键部署版 / Local one-click deployment for the Douyin (TikTok CN) streak-keeping automation panel.",
   "bin": {
     "douyin-fire": "bin/douyin-fire.js"

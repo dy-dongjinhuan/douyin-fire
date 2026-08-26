@@ -6,216 +6,542 @@
 <title>火花续连 · 让每段关系都不被遗忘</title>
 <meta name="description" content="为抖音好友关系设计的自动化续火花工具，安静、稳定、私密。">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23fe2c55' d='M12 2l2.2 6.6L21 11l-6.8 2.4L12 20l-2.2-6.6L3 11l6.8-2.4z'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="theme.css">
 <style>
-  .home{ position:relative; z-index:1; }
-  .hnav{ position:sticky; top:0; z-index:30; display:flex; align-items:center; gap:18px; padding:16px 28px; border-bottom:1px solid var(--hairline); background:rgba(11,11,15,.72); backdrop-filter:blur(14px); }
-  .hnav .brand{ border:none; padding:0; height:auto; }
-  .hnav .links{ display:flex; gap:26px; margin-left:18px; }
-  .hnav .links a{ color:var(--text-2); font-size:13.5px; transition:color .18s; }
-  .hnav .links a:hover{ color:var(--text); }
-  .hnav .spacer{ flex:1; }
-  .hcontainer{ max-width:1120px; margin:0 auto; padding:0 28px; }
-  .hero{ padding:96px 0 72px; }
-  .eyebrow{ display:inline-flex; align-items:center; gap:8px; font-size:12.5px; color:var(--text-2); border:1px solid var(--hairline-2); border-radius:30px; padding:5px 14px; margin-bottom:26px; }
-  .eyebrow .pulse{ width:7px; height:7px; border-radius:50%; background:var(--accent); box-shadow:0 0 0 4px var(--accent-soft); }
-  .hero h1{ font-size:56px; line-height:1.08; font-weight:700; letter-spacing:-1.2px; margin:0 0 22px; max-width:16ch; }
-  .hero h1 .em{ color:var(--accent); }
-  .hero p.lead{ font-size:17px; color:var(--text-2); max-width:54ch; line-height:1.7; margin:0 0 34px; }
-  .hero .cta{ display:flex; gap:14px; flex-wrap:wrap; }
-  .hero-visual{ margin-top:64px; border:1px solid var(--hairline); border-radius:var(--radius-lg); background:linear-gradient(180deg,var(--surface),var(--bg-2)); overflow:hidden; box-shadow:var(--shadow-2); }
-  .hv-bar{ display:flex; align-items:center; gap:8px; padding:14px 18px; border-bottom:1px solid var(--hairline); }
-  .hv-bar .dotrow{ display:flex; gap:7px; }
-  .hv-bar .dotrow i{ width:11px; height:11px; border-radius:50%; background:var(--surface-3); display:block; }
-  .hv-bar .url{ margin-left:14px; font-size:12.5px; color:var(--text-3); font-family:ui-monospace,monospace; }
-  .hv-body{ display:grid; grid-template-columns:1.1fr .9fr; gap:0; }
-  .hv-left{ padding:30px; border-right:1px solid var(--hairline); }
-  .hv-row{ display:flex; align-items:center; gap:14px; padding:14px 0; border-bottom:1px solid var(--hairline); }
-  .hv-row:last-child{ border-bottom:none; }
-  .hv-av{ width:42px; height:42px; border-radius:50%; flex:0 0 42px; display:grid; place-items:center; font-weight:600; color:#fff; font-size:15px; }
-  .hv-name{ font-weight:600; font-size:14px; }
-  .hv-sub{ font-size:12px; color:var(--text-3); }
-  .hv-spark{ margin-left:auto; font-size:12.5px; color:var(--accent-2); display:flex; align-items:center; gap:6px; }
-  .hv-right{ padding:30px; }
-  .hv-stat{ display:flex; justify-content:space-between; padding:13px 0; border-bottom:1px solid var(--hairline); font-size:13.5px; }
-  .hv-stat:last-child{ border-bottom:none; }
-  .hv-stat b{ font-weight:600; }
-  section.block{ padding:84px 0; border-top:1px solid var(--hairline); }
-  .sec-head{ max-width:60ch; margin-bottom:44px; }
-  .sec-head .kicker{ font-size:12.5px; letter-spacing:1.5px; text-transform:uppercase; color:var(--accent-2); margin-bottom:14px; }
-  .sec-head h2{ font-size:34px; font-weight:700; letter-spacing:-.6px; margin:0 0 14px; }
-  .sec-head p{ font-size:15.5px; color:var(--text-2); line-height:1.7; margin:0; }
-  .feat-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:18px; }
-  .feat{ padding:24px; border:1px solid var(--hairline); border-radius:var(--radius); background:var(--surface); transition:border-color .2s, transform .2s var(--ease); }
-  .feat:hover{ border-color:var(--hairline-strong); transform:translateY(-3px); }
-  .feat .fi{ width:42px; height:42px; border-radius:12px; background:var(--accent-soft); color:var(--accent-2); display:grid; place-items:center; margin-bottom:18px; }
-  .feat h3{ margin:0 0 8px; font-size:16px; font-weight:600; }
-  .feat p{ margin:0; font-size:13.5px; color:var(--text-2); line-height:1.65; }
-  .steps{ display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:18px; counter-reset:step; }
-  .step{ position:relative; padding:26px 22px; border:1px solid var(--hairline); border-radius:var(--radius); background:var(--surface); }
-  .step .num{ font-size:13px; font-weight:700; color:var(--accent); width:34px; height:34px; border-radius:10px; border:1px solid var(--accent-line); background:var(--accent-soft); display:grid; place-items:center; margin-bottom:16px; }
-  .step h3{ margin:0 0 8px; font-size:15.5px; }
-  .step p{ margin:0; font-size:13.5px; color:var(--text-2); line-height:1.65; }
-  .trust{ display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:18px; }
-  .trust .t{ padding:22px; border:1px solid var(--hairline); border-radius:var(--radius); background:var(--surface); display:flex; gap:14px; align-items:flex-start; }
-  .trust .t .fi{ width:38px; height:38px; flex:0 0 38px; border-radius:10px; background:var(--surface-2); border:1px solid var(--hairline); display:grid; place-items:center; color:var(--text-2); }
-  .trust .t h4{ margin:0 0 5px; font-size:14.5px; }
-  .trust .t p{ margin:0; font-size:13px; color:var(--text-3); line-height:1.6; }
-  .cta-band{ border:1px solid var(--hairline-2); border-radius:var(--radius-lg); padding:56px 40px; text-align:center; background:linear-gradient(180deg,var(--surface),var(--bg-2)); }
-  .cta-band h2{ font-size:32px; margin:0 0 14px; letter-spacing:-.5px; }
-  .cta-band p{ color:var(--text-2); font-size:15px; margin:0 0 28px; }
-  .footer{ border-top:1px solid var(--hairline); padding:48px 0 60px; }
-  .footer .grid{ display:flex; justify-content:space-between; gap:30px; flex-wrap:wrap; align-items:flex-start; }
-  .footer .col h5{ font-size:13px; color:var(--text); margin:0 0 14px; }
-  .footer .col a{ display:block; color:var(--text-3); font-size:13px; margin-bottom:9px; transition:color .15s; }
-  .footer .col a:hover{ color:var(--text); }
-  .footer .fine{ margin-top:40px; font-size:12.5px; color:var(--text-4); display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px; }
-  @media(max-width:760px){ .hero h1{ font-size:38px; } .hv-body{ grid-template-columns:1fr; } .hv-left{ border-right:none; border-bottom:1px solid var(--hairline); } .hnav .links{ display:none; } }
+  :root{
+    --ink:#f5f6fa;
+    --ink-2:rgba(245,246,250,.72);
+    --ink-3:rgba(245,246,250,.48);
+    --card:rgba(255,255,255,.04);
+    --card-hover:rgba(255,255,255,.07);
+    --line:rgba(255,255,255,.08);
+    --line-strong:rgba(255,255,255,.16);
+    --accent:#fe2c55;
+    --accent-2:#ff5c7c;
+    --blue:#5b9dff;
+    --purple:#a78bfa;
+    --radius:16px;
+    --radius-lg:22px;
+    --font:"Inter","PingFang SC","Microsoft YaHei",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:"SFMono-Regular",ui-monospace,Menlo,Consolas,monospace;
+    --ease-out:cubic-bezier(.16,1,.3,1);
+  }
+  *,*::before,*::after{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    font-family:var(--font);
+    background:#060913;
+    color:var(--ink);
+    font-size:15px;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+  a{ color:inherit; text-decoration:none; }
+
+  /* ============ 全页固定背景：深蓝夜色 + 星座粒子 + 光晕 ============ */
+  .bg{
+    position:fixed; inset:0; z-index:0; pointer-events:none;
+    background:
+      radial-gradient(1000px 620px at 84% -8%, rgba(91,157,255,.15), transparent 55%),
+      radial-gradient(900px 560px at -12% 20%, rgba(167,139,250,.10), transparent 52%),
+      radial-gradient(820px 520px at 112% 72%, rgba(254,44,85,.07), transparent 52%),
+      linear-gradient(180deg, #060913 0%, #0a1022 45%, #060913 100%);
+  }
+  .bg canvas{ position:absolute; inset:0; width:100%; height:100%; }
+  .bg .blob{ position:absolute; border-radius:50%; filter:blur(80px); }
+  .bg .blob.b1{ width:560px; height:560px; left:6%; top:-140px; background:radial-gradient(circle,#1A3870 0%,transparent 70%); opacity:.45; }
+  .bg .blob.b2{ width:640px; height:400px; left:40%; top:32%; background:radial-gradient(ellipse at center,#2D5F9E 0%,#1A3870 42%,transparent 70%); opacity:.4; }
+  .bg .blob.b3{ width:520px; height:520px; right:4%; top:58%; background:radial-gradient(circle,#4A8AC4 0%,#2D5F9E 30%,transparent 70%); opacity:.28; }
+  .bg .blob.b4{ width:420px; height:420px; left:12%; top:78%; background:radial-gradient(circle,rgba(254,44,85,.35) 0%,transparent 70%); opacity:.18; }
+
+  /* ============ 导航（sticky 平滑收缩，复刻 DeepSeek 结构） ============ */
+  .hnav{
+    position:sticky; top:14px; z-index:100;
+    max-width:1280px; margin:0 auto;
+    padding:20px 36px 0;
+    transition:padding .55s cubic-bezier(.16,1,.3,1);
+  }
+  .nav-inner{
+    display:flex; align-items:center; gap:16px;
+    width:100%; margin:0 auto;
+    padding:10px 14px;
+    border:1px solid rgba(255,255,255,.09);
+    border-radius:16px;
+    background:rgba(10,14,24,.5);
+    backdrop-filter:blur(16px);
+    -webkit-backdrop-filter:blur(16px);
+    box-shadow:0 8px 30px rgba(0,0,0,.3);
+    transition:width .5s cubic-bezier(.22,.61,.36,1), border-radius .5s cubic-bezier(.22,.61,.36,1), background .4s ease, box-shadow .4s ease;
+    will-change:width;
+  }
+  .brand{ display:flex; align-items:center; gap:10px; }
+  .brand-mark{
+    width:30px; height:30px; border-radius:8px;
+    background:linear-gradient(135deg,var(--accent),#ff7a5c);
+    display:grid; place-items:center; color:#fff;
+    box-shadow:0 4px 14px rgba(254,44,85,.4);
+    transition:transform .3s var(--ease-out);
+  }
+  .brand:hover .brand-mark{ transform:rotate(-8deg) scale(1.06); }
+  .brand-name{
+    font-weight:700; font-size:15px; color:#fff; letter-spacing:.2px;
+    max-width:160px; overflow:hidden; white-space:nowrap;
+    transition:opacity .4s ease, max-width .5s cubic-bezier(.22,.61,.36,1), margin .5s ease;
+  }
+  .brand-badge{
+    font-family:var(--mono); font-size:11px; font-weight:500; line-height:1;
+    padding:5px 9px 4px; border-radius:7px;
+    background:rgba(0,0,0,.28); color:rgba(255,255,255,.92);
+    border:1px solid rgba(255,255,255,.14);
+    box-shadow:0 0 16px rgba(255,255,255,.07), inset 0 1px 0 rgba(255,255,255,.08);
+    white-space:nowrap; max-width:160px; overflow:hidden;
+    transition:opacity .4s ease, max-width .5s cubic-bezier(.22,.61,.36,1), margin .5s ease, padding .5s ease;
+  }
+  .nav-menu{ display:flex; align-items:center; gap:3px; margin-left:8px; }
+  .nav-menu a{
+    position:relative; padding:8px 13px; border-radius:9px;
+    color:rgba(255,255,255,.62); font-size:13.5px; font-weight:500;
+    transition:color .2s ease, background .2s ease, transform .2s var(--ease-out);
+  }
+  .nav-menu a:hover{ color:#fff; background:rgba(255,255,255,.07); transform:translateY(-1px); }
+  .spacer{ flex:1; }
+  .menu-btn{
+    display:none; width:38px; height:38px; border-radius:10px;
+    border:1px solid rgba(255,255,255,.1); background:rgba(255,255,255,.05);
+    color:rgba(255,255,255,.85); cursor:pointer;
+    align-items:center; justify-content:center;
+    transition:background .2s ease, transform .2s var(--ease-out);
+  }
+  .menu-btn:hover{ background:rgba(255,255,255,.1); }
+  .menu-btn:active{ transform:scale(.94); }
+  .mobile-menu{
+    display:none; flex-direction:column; gap:4px;
+    margin-top:8px; padding:10px;
+    border:1px solid rgba(255,255,255,.09); border-radius:14px;
+    background:rgba(10,14,24,.7); backdrop-filter:blur(16px);
+  }
+  .mobile-menu.open{ display:flex; animation:fadeIn .25s ease; }
+  .mobile-menu a{ padding:11px 14px; border-radius:10px; color:rgba(255,255,255,.72); font-size:14px; transition:color .2s, background .2s; }
+  .mobile-menu a:hover{ color:#fff; background:rgba(255,255,255,.07); }
+
+  /* ============ 滚动后平滑收缩成居中胶囊 ============ */
+  .hnav.scrolled{ padding:12px 20px 0; }
+  .hnav.scrolled .nav-inner{
+    width:600px;
+    border-radius:999px;
+    background:rgba(10,14,24,.78);
+    box-shadow:0 12px 40px rgba(0,0,0,.45);
+  }
+  .hnav.scrolled .brand-name{ opacity:0; max-width:0; margin:0; }
+  .hnav.scrolled .brand-badge{ opacity:0; max-width:0; margin:0; padding-left:0; padding-right:0; }
+
+  @media(max-width:880px){
+    .nav-menu{ display:none; }
+    .menu-btn{ display:inline-flex; }
+    .hnav.scrolled .nav-inner{ width:200px; }
+  }
+
+  /* ============ Hero ============ */
+  .hero{
+    position:relative; z-index:2;
+    max-width:1280px; margin:0 auto;
+    display:grid;
+    grid-template-columns:1fr;
+    gap:64px;
+    align-items:center;
+    padding:80px 36px 140px;
+  }
+  /* 粒子火花 logo（hero 中央装饰） */
+  .spark-logo{ position:absolute; z-index:1; pointer-events:none; left:50%; top:52%; transform:translate(-50%,-50%); width:520px; height:520px; opacity:.9; }
+  .hero-left{ position:relative; z-index:2; max-width:760px; margin:0 auto; text-align:center; }
+
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:9px;
+    font-size:12.5px; color:rgba(255,255,255,.78);
+    border:1px solid rgba(255,255,255,.16); border-radius:30px;
+    padding:6px 15px; margin-bottom:26px;
+    background:rgba(255,255,255,.06);
+    backdrop-filter:blur(8px);
+  }
+  .eyebrow .pulse{
+    width:7px; height:7px; border-radius:50%;
+    background:var(--accent);
+    box-shadow:0 0 0 4px rgba(254,44,85,.2);
+    animation:blink 2s ease-in-out infinite;
+  }
+  @keyframes blink{ 0%,100%{ opacity:1; } 50%{ opacity:.35; } }
+
+  .hero h1{
+    font-size:58px; line-height:1.12; font-weight:700;
+    letter-spacing:-1.6px; margin:0 0 24px; color:#fff;
+  }
+  .hero h1 .em{
+    background:linear-gradient(120deg,#ff7a5c,#fe2c55);
+    -webkit-background-clip:text; background-clip:text;
+    -webkit-text-fill-color:transparent;
+  }
+  .hero p.desc{
+    font-size:16.5px; color:rgba(255,255,255,.64);
+    max-width:56ch; line-height:1.78; margin:0 auto 14px;
+  }
+  .hero p.desc + p.desc{ margin-bottom:36px; }
+
+  .cta{ display:flex; gap:12px; flex-wrap:wrap; align-items:center; justify-content:center; }
+
+  /* ============ 按钮（涟漪 + 悬浮 + 按压动效） ============ */
+  .btn{
+    position:relative; overflow:hidden;
+    display:inline-flex; align-items:center; gap:9px;
+    padding:12px 20px; border-radius:30px;
+    font-size:14.5px; font-weight:600; cursor:pointer;
+    transition:transform .25s var(--ease-out), background .25s ease, border-color .25s ease, box-shadow .3s ease;
+    user-select:none;
+  }
+  .btn svg{ width:17px; height:17px; transition:transform .3s var(--ease-out); }
+  .btn:hover svg{ transform:scale(1.12); }
+  .btn-primary{ background:#fff; color:#11141c; border:1px solid #fff; }
+  .btn-primary:hover{ background:#f1f2f6; transform:translateY(-2px); box-shadow:0 10px 30px rgba(0,0,0,.35); }
+  .btn-secondary{
+    background:rgba(255,255,255,.08); color:#fff;
+    border:1px solid rgba(255,255,255,.22); backdrop-filter:blur(8px);
+  }
+  .btn-secondary:hover{ background:rgba(255,255,255,.14); border-color:rgba(255,255,255,.34); transform:translateY(-2px); box-shadow:0 10px 30px rgba(0,0,0,.3); }
+  .btn-ghost{ background:transparent; color:rgba(255,255,255,.82); border:1px solid transparent; }
+  .btn-ghost:hover{ color:#fff; background:rgba(255,255,255,.08); }
+  .btn:active{ transform:translateY(0) scale(.97); }
+  .btn .ripple{
+    position:absolute; border-radius:50%; pointer-events:none;
+    background:rgba(255,255,255,.4); transform:scale(0);
+    animation:ripple .6s ease-out forwards;
+  }
+  @keyframes ripple{ to{ transform:scale(2.6); opacity:0; } }
+  .btn:focus-visible, .copy-btn:focus-visible, .menu-btn:focus-visible,
+  .terminal-tabs button:focus-visible, .nav-menu a:focus-visible, .mobile-menu a:focus-visible{
+    outline:2px solid var(--accent-2); outline-offset:2px;
+  }
+
+  /* ============ 终端窗口 ============ */
+  .terminal{
+    background:rgba(10,14,24,.6);
+    border:1px solid rgba(255,255,255,.10);
+    border-radius:var(--radius);
+    backdrop-filter:blur(18px);
+    box-shadow:0 30px 80px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.07);
+    overflow:hidden;
+    transition:border-color .3s ease, box-shadow .3s ease, transform .3s var(--ease-out);
+  }
+  .terminal:hover{ border-color:rgba(255,255,255,.16); box-shadow:0 40px 90px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.09); transform:translateY(-3px); }
+  .terminal-tabs{ display:flex; gap:4px; padding:12px 14px 0; border-bottom:1px solid rgba(255,255,255,.08); }
+  .terminal-tabs button{
+    position:relative;
+    padding:9px 16px; border-radius:10px 10px 0 0;
+    border:1px solid transparent; border-bottom:none;
+    background:transparent; color:rgba(255,255,255,.5);
+    font-size:13px; font-weight:500; cursor:pointer; font-family:var(--font);
+    transition:color .25s, background .25s;
+  }
+  .terminal-tabs button.active{ background:rgba(255,255,255,.06); color:#fff; border-color:rgba(255,255,255,.08); }
+  .terminal-tabs button:hover:not(.active){ color:rgba(255,255,255,.8); }
+  .terminal-body{ padding:22px 22px 26px; min-height:150px; position:relative; }
+  .tab-content{ display:none; }
+  .tab-content.active{ display:block; animation:fadeIn .3s ease; }
+  @keyframes fadeIn{ from{ opacity:0; transform:translateY(4px);} to{ opacity:1; transform:none;} }
+  .tab-content .line{ display:flex; align-items:center; justify-content:space-between; gap:14px; font-family:var(--mono); font-size:14.5px; color:#e6e9f2; }
+  .tab-content .cmd{ display:flex; align-items:center; gap:10px; }
+  .tab-content .prompt{ color:var(--purple); user-select:none; }
+  .copy-btn{
+    position:relative; overflow:hidden;
+    flex:0 0 auto; display:inline-flex; align-items:center; gap:6px;
+    padding:6px 12px; border-radius:8px;
+    border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.05);
+    color:rgba(255,255,255,.6); font-size:12px; cursor:pointer;
+    transition:background .2s, color .2s, transform .2s var(--ease-out);
+  }
+  .copy-btn:hover{ background:rgba(255,255,255,.1); color:#fff; transform:translateY(-1px); }
+  .copy-btn:active{ transform:scale(.94); }
+  .copy-btn svg{ width:13px; height:13px; }
+
+  /* ============ 正文区块 ============ */
+  .container{ position:relative; z-index:2; max-width:1120px; margin:0 auto; padding:0 32px; }
+  section.block{ padding:96px 0; border-top:1px solid var(--line); }
+  .sec-head{ max-width:64ch; margin-bottom:48px; }
+  .sec-head .kicker{
+    font-size:12.5px; letter-spacing:1.6px; text-transform:uppercase;
+    color:var(--accent-2); margin-bottom:14px; font-weight:600;
+  }
+  .sec-head h2{ font-size:36px; font-weight:700; letter-spacing:-.8px; margin:0 0 16px; color:var(--ink); }
+  .sec-head p{ font-size:16px; color:var(--ink-2); line-height:1.7; margin:0; }
+  .feat-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:20px; }
+
+  /* 卡片：3D tilt + 鼠标光晕（复刻 DeepSeek function E） */
+  .tilt{ position:relative; transform-style:preserve-3d; will-change:transform; }
+  .tilt-glow{
+    position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+    opacity:0; transition:opacity .3s ease; z-index:1;
+  }
+  .feat{
+    position:relative;
+    padding:28px 24px; border:1px solid var(--line); border-radius:var(--radius);
+    background:var(--card);
+    transition:border-color .3s ease, background .3s ease;
+    overflow:hidden;
+  }
+  .feat:hover{ border-color:var(--line-strong); background:var(--card-hover); }
+  .feat .fi{
+    width:44px; height:44px; border-radius:12px;
+    background:linear-gradient(135deg,rgba(254,44,85,.18),rgba(255,122,92,.12));
+    color:var(--accent-2);
+    display:grid; place-items:center; margin-bottom:20px;
+    transition:transform .35s var(--ease-out);
+  }
+  .feat:hover .fi{ transform:translateZ(30px) scale(1.06); }
+  .feat h3{ margin:0 0 8px; font-size:16.5px; font-weight:600; color:var(--ink); transition:transform .35s var(--ease-out); }
+  .feat:hover h3{ transform:translateZ(20px); }
+  .feat p{ margin:0; font-size:14px; color:var(--ink-2); line-height:1.66; transition:transform .35s var(--ease-out); }
+  .feat:hover p{ transform:translateZ(14px); }
+
+  .steps{ display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:20px; }
+  .step{
+    position:relative; overflow:hidden; padding:28px 24px;
+    border:1px solid var(--line); border-radius:var(--radius); background:var(--card);
+    transition:border-color .3s ease, background .3s ease;
+  }
+  .step:hover{ border-color:var(--line-strong); background:var(--card-hover); }
+  .step .num{
+    font-size:13px; font-weight:700; color:var(--accent-2);
+    width:34px; height:34px; border-radius:10px;
+    border:1px solid rgba(254,44,85,.32); background:rgba(254,44,85,.1);
+    display:grid; place-items:center; margin-bottom:18px;
+    transition:transform .35s var(--ease-out);
+  }
+  .step:hover .num{ transform:translateZ(26px) scale(1.08); }
+  .step h3{ margin:0 0 8px; font-size:15.5px; color:var(--ink); transition:transform .35s var(--ease-out); }
+  .step:hover h3{ transform:translateZ(18px); }
+  .step p{ margin:0; font-size:14px; color:var(--ink-2); line-height:1.66; transition:transform .35s var(--ease-out); }
+  .step:hover p{ transform:translateZ(12px); }
+
+  .trust{ display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:20px; }
+  .trust .t{
+    position:relative; overflow:hidden;
+    padding:24px; border:1px solid var(--line); border-radius:var(--radius);
+    background:var(--card); display:flex; gap:16px; align-items:flex-start;
+    transition:border-color .3s ease, background .3s ease;
+  }
+  .trust .t:hover{ border-color:var(--line-strong); background:var(--card-hover); }
+  .trust .t .fi{
+    width:40px; height:40px; flex:0 0 40px; border-radius:11px;
+    background:rgba(255,255,255,.06); border:1px solid var(--line);
+    display:grid; place-items:center; color:var(--ink-2);
+    transition:transform .35s var(--ease-out);
+  }
+  .trust .t:hover .fi{ transform:translateZ(24px) scale(1.05); }
+  .trust .t h4{ margin:0 0 5px; font-size:14.5px; color:var(--ink); }
+  .trust .t p{ margin:0; font-size:13.5px; color:var(--ink-3); line-height:1.6; }
+
+  .cta-band{
+    border:1px solid var(--line); border-radius:var(--radius-lg);
+    padding:64px 40px; text-align:center;
+    background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02));
+  }
+  .cta-band h2{ font-size:32px; margin:0 0 14px; letter-spacing:-.6px; color:var(--ink); }
+  .cta-band p{ color:var(--ink-2); font-size:15.5px; margin:0; }
+
+  /* ============ 页脚 ============ */
+  .footer{ position:relative; z-index:2; border-top:1px solid var(--line); padding:56px 0 64px; }
+  .footer .grid{ display:flex; justify-content:space-between; gap:32px; flex-wrap:wrap; align-items:flex-start; }
+  .footer .col h5{ font-size:13px; color:var(--ink); margin:0 0 14px; }
+  .footer .col a{ display:block; color:var(--ink-3); font-size:13.5px; margin-bottom:10px; transition:color .15s; }
+  .footer .col a:hover{ color:var(--ink); }
+  .footer .fine{
+    margin-top:44px; font-size:12.5px; color:var(--ink-3);
+    display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;
+  }
+
+  /* ============ 入场动画 ============ */
+  .enter{ opacity:0; transform:translateY(18px); filter:blur(6px); animation:enter .8s cubic-bezier(.22,.61,.36,1) forwards; }
+  @keyframes enter{ to{ opacity:1; transform:none; filter:none; } }
+  .d1{ animation-delay:.05s; } .d2{ animation-delay:.14s; } .d3{ animation-delay:.23s; }
+  .d4{ animation-delay:.32s; } .d5{ animation-delay:.42s; } .d6{ animation-delay:.52s; }
+
+  @media(prefers-reduced-motion:reduce){
+    *{ animation-duration:.001ms !important; transition-duration:.001ms !important; }
+  }
+  @media(max-width:900px){
+    .hero{ grid-template-columns:1fr; gap:48px; padding:64px 24px 90px; }
+    .hero h1{ font-size:44px; }
+    .spark-logo{ width:360px; height:360px; }
+  }
+  @media(max-width:640px){
+    .hnav{ padding:14px 18px 0; }
+    .hero{ padding:56px 20px 80px; }
+    .hero h1{ font-size:34px; }
+    .sec-head h2{ font-size:28px; }
+    .cta-band{ padding:44px 22px; }
+    .spark-logo{ width:280px; height:280px; }
+  }
 </style>
 </head>
-<body class="home">
-  <nav class="hnav">
-    <div class="brand">
-      <div class="brand-mark"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2l2.2 6.6L21 11l-6.8 2.4L12 20l-2.2-6.6L3 11l6.8-2.4z"/></svg></div>
-      <div class="brand-text"><div class="brand-name">火花续连</div></div>
+<body>
+
+  <!-- 全页固定背景：深蓝夜色 + 星座粒子 + 光晕 -->
+  <div class="bg">
+    <canvas id="stars"></canvas>
+    <div class="blob b1"></div>
+    <div class="blob b2"></div>
+    <div class="blob b3"></div>
+    <div class="blob b4"></div>
+  </div>
+
+  <!-- 导航（普通文档流，随滚动滚走，复刻 DeepSeek 结构） -->
+  <header class="hnav">
+    <div class="nav-inner">
+      <a class="brand" href="#top">
+        <span class="brand-mark">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2l2.2 6.6L21 11l-6.8 2.4L12 20l-2.2-6.6L3 11l6.8-2.4z"/></svg>
+        </span>
+        <span class="brand-text"><span class="brand-name">火花续连</span></span>
+        <span class="brand-badge">Douyin Fire</span>
+      </a>
+
+      <nav class="nav-menu" id="navMenu">
+        <a href="#cap">核心能力</a>
+        <a href="#how">工作原理</a>
+        <a href="#trust">信任与安全</a>
+      </nav>
+
+      <div class="spacer"></div>
+
+      <button class="menu-btn" id="menuBtn" aria-label="打开菜单">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
     </div>
-    <div class="links">
-      <a href="#cap">能力</a>
-      <a href="#how">原理</a>
+
+    <div class="mobile-menu" id="mobileMenu">
+      <a href="#cap">核心能力</a>
+      <a href="#how">工作原理</a>
       <a href="#trust">信任与安全</a>
     </div>
-    <div class="spacer"></div>
-    <a href="/login" class="btn ghost sm">登录</a>
-    <a href="/app" class="btn primary sm">进入控制台</a>
-  </nav>
+  </header>
 
-  <div class="hcontainer">
-    <!-- HERO -->
-    <section class="hero">
-      <span class="eyebrow reveal"><span class="pulse"></span> 为关系而生的自动化</span>
-      <h1 class="reveal">让每一段<span class="em">火花</span>，<br>都不被时间吹灭。</h1>
-      <p class="lead reveal">火花续连帮你安静地维系抖音里那些重要的人。设置一次，每天自动续上火花——没有打扰，没有遗忘，只有被认真对待的关系。</p>
-      <div class="cta reveal">
-        <a href="/app" class="btn primary">开始使用</a>
-        <a href="#how" class="btn ghost">了解原理</a>
+  <!-- ================= HERO ================= -->
+  <section class="hero">
+    <canvas class="spark-logo" id="spark"></canvas>
+
+    <div class="hero-left">
+      <span class="eyebrow enter d1"><span class="pulse"></span> Douyin Fire 服务器版</span>
+      <h1 class="enter d2">让每一段<span class="em">火花</span>，<br>都不被遗忘。</h1>
+      <p class="desc enter d3">火花续连帮你安静地维系抖音里那些重要的人。设置一次，每天自动续上火花——没有打扰，没有遗忘，只有被认真对待的关系。</p>
+      <p class="desc enter d3">一键启动、免登录本地运行，登录态与好友列表只保存在你自己的设备上。</p>
+      <div class="cta enter d4">
+        <a href="/app" class="btn btn-primary">前往控制台</a>
+        <a href="#how" class="btn btn-ghost">了解原理 →</a>
       </div>
+    </div>
+  </section>
 
-      <div class="hero-visual reveal">
-        <div class="hv-bar">
-          <div class="dotrow"><i></i><i></i><i></i></div>
-          <span class="url">app.firelink / 控制台</span>
-        </div>
-        <div class="hv-body">
-          <div class="hv-left">
-            <div class="hv-row">
-              <div class="hv-av" style="background:linear-gradient(135deg,#fe2c55,#ff7a5c)">林</div>
-              <div><div class="hv-name">林晚</div><div class="hv-sub">互相关注 · 火花第 128 天</div></div>
-              <div class="hv-spark"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 2l2.2 6.6L21 11l-6.8 2.4L12 20l-2.2-6.6L3 11l6.8-2.4z"/></svg>已续</div>
-            </div>
-            <div class="hv-row">
-              <div class="hv-av" style="background:linear-gradient(135deg,#5b9dff,#7be0c8)">陈</div>
-              <div><div class="hv-name">陈屿</div><div class="hv-sub">互相关注 · 火花第 56 天</div></div>
-              <div class="hv-spark"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 2l2.2 6.6L21 11l-6.8 2.4L12 20l-2.2-6.6L3 11l6.8-2.4z"/></svg>已续</div>
-            </div>
-            <div class="hv-row">
-              <div class="hv-av" style="background:linear-gradient(135deg,#a06bff,#ff6bd0)">苏</div>
-              <div><div class="hv-name">苏念</div><div class="hv-sub">互相关注 · 火花第 9 天</div></div>
-              <div class="hv-spark"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 2l2.2 6.6L21 11l-6.8 2.4L12 20l-2.2-6.6L3 11l6.8-2.4z"/></svg>已续</div>
-            </div>
-          </div>
-          <div class="hv-right">
-            <div class="hv-stat"><span>今日已续</span><b>3 / 3</b></div>
-            <div class="hv-stat"><span>连续稳定</span><b>46 天</b></div>
-            <div class="hv-stat"><span>下次执行</span><b>明日 09:00</b></div>
-            <div class="hv-stat"><span>运行模式</span><b>每日自动</b></div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- CAPABILITIES -->
+  <!-- ================= 核心能力 ================= -->
+  <div class="container">
     <section class="block" id="cap">
-      <div class="sec-head reveal">
+      <div class="sec-head">
         <div class="kicker">核心能力</div>
         <h2>把续火花，交给安静可靠的系统</h2>
-        <p>不是又一个花哨的工具，而是一套为"长期维系"设计的稳定机制。你只需要做决定，执行交给我们。</p>
+        <p>从登录、添加好友到定时发送，Douyin Fire 覆盖了续火花的每一个环节，尽量贴近人工、降低风险。</p>
       </div>
       <div class="feat-grid">
-        <div class="feat reveal">
-          <div class="fi"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div>
-          <h3>互关好友识别</h3>
-          <p>一键从账号中识别所有互相关注的好友，自动整理成可勾选的清单，无需手动抄写昵称。</p>
+        <div class="feat tilt">
+          <div class="fi"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="2" width="10" height="20" rx="2.5"/><path d="M11 18h2"/></svg></div>
+          <h3>Cookie 登录</h3>
+          <p>粘贴抖音 Cookie 即可登录，登录态保存在本地，无需手动处理 Cookie。</p>
         </div>
-        <div class="feat reveal">
-          <div class="fi"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/><circle cx="12" cy="12" r="4"/></svg></div>
-          <h3>自选续连对象</h3>
-          <p>谁该续、谁先放一放，由你决定。可视化卡片点选，选择即时保存，下次执行只对选中的人生效。</p>
+        <div class="feat tilt">
+          <div class="fi"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+          <h3>手动添加好友</h3>
+          <p>手动输入好友昵称或 ID 添加，维护需要续火花的对象清单。</p>
         </div>
-        <div class="feat reveal">
+        <div class="feat tilt">
+          <div class="fi"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+          <h3>文本消息 · 随机池</h3>
+          <p>消息支持填写文本内容，可配置多条随机抽取，提升自然度。</p>
+        </div>
+        <div class="feat tilt">
+          <div class="fi"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.9 5.8 5.8 1.9-5.8 1.9L12 18l-1.9-5.4-5.8-1.9 5.8-1.9z"/></svg></div>
+          <h3>AI 智能文案</h3>
+          <p>内置智谱 GLM-4-Flash、OpenRouter 等大模型接口，按设定风格实时生成文案，可自定义接口。</p>
+        </div>
+        <div class="feat tilt">
           <div class="fi"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
-          <h3>每日定时执行</h3>
-          <p>设定一个时间，系统每天准时续上火花。后台稳定运行，不依赖你在线，也不会错过任何一天。</p>
+          <h3>定时任务调度</h3>
+          <p>通过调度配置设定执行计划，到点自动运行，无需人工点击，也不会错过任何一天。</p>
         </div>
-        <div class="feat reveal">
+        <div class="feat tilt">
           <div class="fi"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/></svg></div>
-          <h3>本地与私密</h3>
-          <p>登录态与好友配置仅存储在你授权的环境中，不上传无关数据，关系列表始终由你掌控。</p>
+          <h3>随机间隔 · 防重复</h3>
+          <p>发送间隔在设定区间随机，支持防重复发送，尽量贴近人工、降低被风控识别。</p>
+        </div>
+        <div class="feat tilt">
+          <div class="fi"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg></div>
+          <h3>实时日志 · 运行统计</h3>
+          <p>实时滚动展示运行过程，统计发送成功 / 失败数与时长，掌握任务健康状况。</p>
+        </div>
+        <div class="feat tilt">
+          <div class="fi"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+          <h3>免登录本地运行</h3>
+          <p>开箱即用，无需注册登录，启动后直接进入控制台使用。</p>
         </div>
       </div>
     </section>
 
-    <!-- HOW -->
+    <!-- ================= 工作原理 ================= -->
     <section class="block" id="how">
-      <div class="sec-head reveal">
+      <div class="sec-head">
         <div class="kicker">工作原理</div>
         <h2>四步，之后便不再需要操心</h2>
         <p>从连接到稳定执行，整个过程清晰、可控，每一步都为你保留撤回的余地。</p>
       </div>
       <div class="steps">
-        <div class="step reveal"><div class="num">1</div><h3>连接账号</h3><p>在你的设备上完成抖音登录，登录态安全保存，全程不经过第三方中转。</p></div>
-        <div class="step reveal"><div class="num">2</div><h3>识别好友</h3><p>系统读取互相关注列表，生成可视化的好友清单，一目了然。</p></div>
-        <div class="step reveal"><div class="num">3</div><h3>勾选对象</h3><p>挑选需要续火花的好友，也可随时调整，选择会即时生效。</p></div>
-        <div class="step reveal"><div class="num">4</div><h3>稳定续连</h3><p>每天按设定时间自动执行，日志全程可见，异常即时提醒。</p></div>
+        <div class="step tilt"><div class="num">1</div><h3>连接账号</h3><p>粘贴配套「Cookie 获取工具」导出的 Cookie 完成登录，登录态保存在本地，不经过第三方中转。</p></div>
+        <div class="step tilt"><div class="num">2</div><h3>添加好友</h3><p>手动输入好友昵称或 ID，添加到维护清单，挑选要续火花的对象。</p></div>
+        <div class="step tilt"><div class="num">3</div><h3>配置消息</h3><p>填写要发送的文本内容，或开启 AI 智能文案，再设置随机发送间隔与防重复。</p></div>
+        <div class="step tilt"><div class="num">4</div><h3>稳定续连</h3><p>按计划自动打开聊天框发送，实时日志全程可见，异常即时提醒。</p></div>
       </div>
     </section>
 
-    <!-- TRUST -->
+    <!-- ================= 信任与安全 ================= -->
     <section class="block" id="trust">
-      <div class="sec-head reveal">
+      <div class="sec-head">
         <div class="kicker">信任与安全</div>
         <h2>克制，是我们对关系的基本尊重</h2>
         <p>自动化不应以牺牲隐私为代价。火花续连只做它该做的事。</p>
       </div>
       <div class="trust">
-        <div class="t reveal"><div class="fi"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg></div><div><h4>数据最小化</h4><p>只读取维系火花所必需的信息，不触碰私信、不读取内容。</p></div></div>
-        <div class="t reveal"><div class="fi"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/></svg></div><div><h4>你随时可停</h4><p>一键停止、清空配置或移除登录态，没有任何锁定，关系回到你手里。</p></div></div>
-        <div class="t reveal"><div class="fi"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg></div><div><h4>过程透明</h4><p>每一次执行都有日志可追溯，成功与否、对谁执行，清清楚楚。</p></div></div>
-        <div class="t reveal"><div class="fi"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div><h4>稳定优先</h4><p>把可靠性放在花哨之前，宁可慢一点，也不打断你的关系。</p></div></div>
+        <div class="t tilt"><div class="fi"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg></div><div><h4>数据最小化</h4><p>只读取维系火花所必需的信息，不触碰私信、不读取聊天内容。</p></div></div>
+        <div class="t tilt"><div class="fi"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/></svg></div><div><h4>登录态本地保存</h4><p>Cookie 与登录态只存储在你授权的环境，不上传无关数据，关系列表始终由你掌控。</p></div></div>
+        <div class="t tilt"><div class="fi"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg></div><div><h4>拟真降风控</h4><p>随机间隔、防重复、模拟真人操作，尽量贴近人工使用习惯，降低被判定为异常的风险。</p></div></div>
       </div>
     </section>
 
-    <!-- CTA -->
+    <!-- ================= CTA ================= -->
     <section class="block">
-      <div class="cta-band reveal">
+      <div class="cta-band">
         <h2>关系是长期的，工具也该是</h2>
         <p>花一分钟设置，把续火花这件事，从"别忘了"变成"不用记"。</p>
-        <a href="/app" class="btn primary">进入控制台</a>
       </div>
     </section>
   </div>
 
+  <!-- ================= 页脚 ================= -->
   <footer class="footer">
-    <div class="hcontainer">
+    <div class="container">
       <div class="grid">
         <div class="col" style="max-width:280px">
-          <div class="brand" style="border:none;padding:0;height:auto;margin-bottom:12px">
+          <div class="brand" style="margin-bottom:12px">
             <div class="brand-mark"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2l2.2 6.6L21 11l-6.8 2.4L12 20l-2.2-6.6L3 11l6.8-2.4z"/></svg></div>
             <div class="brand-text"><div class="brand-name">火花续连</div></div>
           </div>
-          <p style="color:var(--text-3);font-size:13px;line-height:1.6;margin:0">让每一段火花，都不被时间吹灭。</p>
+          <p style="color:var(--ink-3);font-size:13px;line-height:1.6;margin:0">让每一段火花，都不被时间吹灭。</p>
         </div>
-        <div class="col"><h5>产品</h5><a href="#cap">核心能力</a><a href="#how">工作原理</a><a href="#trust">信任与安全</a><a href="/app">控制台</a></div>
-        <div class="col"><h5>支持</h5><a href="/login">登录</a></div>
+        <div class="col"><h5>产品</h5><a href="#cap">核心能力</a><a href="#how">工作原理</a><a href="#trust">信任与安全</a></div>
+        <div class="col"><h5>资源</h5><a href="/app">前往控制台</a></div>
       </div>
       <div class="fine">
         <span>© 2026 火花续连 · 用心维系每一段关系</span>
@@ -224,17 +550,341 @@
     </div>
   </footer>
 
-  <script src="uikit.js"></script>
-  <script>
-    // 首页轻量入场：导航出现 + 英雄区渐入
-    document.querySelectorAll('.reveal').forEach(function(el,i){
-      el.style.transitionDelay = Math.min(i*40,240)+'ms';
+<script>
+  // ============ 1. 星座粒子背景（全页固定） ============
+  (function(){
+    var canvas = document.getElementById('stars');
+    if (!canvas) return;
+    if (window.matchMedia('(hover: none), (pointer: coarse)').matches) return;
+    var ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    var DPR = Math.min(window.devicePixelRatio || 1, 2);
+    var SPACING = 90, MOUSE_RADIUS = 140;
+    var lineColor = 'rgba(255, 255, 255, ';
+    var dotColor  = 'rgba(255, 255, 255, ';
+    var lineOpacity = 0.08, dotOpacity = 0.16;
+    var points = [], cols = 0, rows = 0, W = 0, H = 0;
+    var mouse = { x: NaN, y: NaN };
+    var running = true, raf = 0, last = 0, FPS = 1000 / 60, resizeTimer = null;
+
+    function build(){
+      cols = Math.ceil(W / SPACING) + 1;
+      rows = Math.ceil(H / SPACING) + 1;
+      var ox = (W - (cols - 1) * SPACING) / 2;
+      var oy = (H - (rows - 1) * SPACING) / 2;
+      points = [];
+      for (var r = 0; r < rows; r++)
+        for (var c = 0; c < cols; c++){
+          var x = ox + SPACING * c, y = oy + SPACING * r;
+          points.push({ restX:x, restY:y, x:x, y:y, vx:0, vy:0 });
+        }
+    }
+    function resize(){
+      W = window.innerWidth; H = window.innerHeight;
+      canvas.width = W * DPR; canvas.height = H * DPR;
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      build(); last = 0; running = true;
+    }
+    function tick(now){
+      if (!running) return;
+      if (now - last < FPS){ raf = requestAnimationFrame(tick); return; }
+      last = now - (now - last) % FPS;
+      ctx.clearRect(0, 0, W, H);
+      var mx = mouse.x, my = mouse.y, maxSpeed = 0;
+      for (var i = 0; i < points.length; i++){
+        var p = points[i];
+        var dx = p.x - mx, dy = p.y - my;
+        var dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist < MOUSE_RADIUS && dist > 0.1){
+          var f = (1 - dist / MOUSE_RADIUS) * 30;
+          p.vx += (dx / dist) * f * 0.1;
+          p.vy += (dy / dist) * f * 0.1;
+        }
+        p.vx += 0.05 * (p.restX - p.x);
+        p.vy += 0.05 * (p.restY - p.y);
+        p.vx *= 0.85; p.vy *= 0.85;
+        p.x += p.vx; p.y += p.vy;
+        var s = Math.abs(p.vx) + Math.abs(p.vy);
+        if (s > maxSpeed) maxSpeed = s;
+      }
+      ctx.strokeStyle = lineColor + lineOpacity + ')';
+      ctx.lineWidth = 0.5;
+      var gap = 10;
+      for (var r = 0; r < rows; r++)
+        for (var c = 0; c < cols - 1; c++){
+          var a = points[r*cols+c], b = points[r*cols+c+1];
+          var dx = b.x - a.x, dy = b.y - a.y, d = Math.sqrt(dx*dx+dy*dy);
+          if (d < 20) continue;
+          var ux = dx/d, uy = dy/d;
+          ctx.beginPath();
+          ctx.moveTo(a.x + gap*ux, a.y + gap*uy);
+          ctx.lineTo(b.x - gap*ux, b.y - gap*uy);
+          ctx.stroke();
+        }
+      for (var c = 0; c < cols; c++)
+        for (var r = 0; r < rows - 1; r++){
+          var a = points[r*cols+c], b = points[(r+1)*cols+c];
+          var dx = b.x - a.x, dy = b.y - a.y, d = Math.sqrt(dx*dx+dy*dy);
+          if (d < 20) continue;
+          var ux = dx/d, uy = dy/d;
+          ctx.beginPath();
+          ctx.moveTo(a.x + gap*ux, a.y + gap*uy);
+          ctx.lineTo(b.x - gap*ux, b.y - gap*uy);
+          ctx.stroke();
+        }
+      ctx.fillStyle = dotColor + dotOpacity + ')';
+      for (var j = 0; j < points.length; j++){
+        var p = points[j], size = 1.8, alpha = dotOpacity;
+        if (!isNaN(mx) && !isNaN(my)){
+          var dx = p.x - mx, dy = p.y - my, d = Math.sqrt(dx*dx+dy*dy);
+          var t = Math.max(0, 1 - d / MOUSE_RADIUS);
+          size = 1.8 + 2*t; alpha = dotOpacity + 0.4*t;
+        }
+        ctx.globalAlpha = alpha;
+        ctx.fillRect(p.x - size, p.y - size, size*2, size*2);
+      }
+      ctx.globalAlpha = 1;
+      if (maxSpeed < 0.01) running = false;
+      else raf = requestAnimationFrame(tick);
+    }
+    function start(){ if (!running){ running = true; last = 0; raf = requestAnimationFrame(tick); } }
+    window.addEventListener('mousemove', function(e){ mouse.x = e.clientX; mouse.y = e.clientY; start(); });
+    window.addEventListener('mouseout', function(e){ if (!e.relatedTarget){ mouse.x = NaN; mouse.y = NaN; start(); } });
+    window.addEventListener('resize', function(){ clearTimeout(resizeTimer); resizeTimer = setTimeout(resize, 150); });
+    resize(); raf = requestAnimationFrame(tick);
+  })();
+
+  // ============ 2. 粒子火花 logo（hero 中央，红色发光粒子构成火花形状） ============
+  (function(){
+    var canvas = document.getElementById('spark');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    var DPR = Math.min(window.devicePixelRatio || 1, 2);
+    // 火花（四角星）多边形，归一化坐标 0..1
+    var verts = [
+      [0.5,0.06],[0.585,0.40],[0.94,0.5],[0.585,0.60],
+      [0.5,0.94],[0.415,0.60],[0.06,0.5],[0.415,0.40]
+    ];
+    var particles = [];
+    var COUNT = 300;
+    var mouse = { x: NaN, y: NaN };
+
+    function pointInPoly(x, y, poly){
+      var inside = false;
+      for (var i=0, j=poly.length-1; i<poly.length; j=i++){
+        var xi=poly[i][0], yi=poly[i][1], xj=poly[j][0], yj=poly[j][1];
+        if (((yi>y)!=(yj>y)) && (x < (xj-xi)*(y-yi)/(yj-yi)+xi)) inside = !inside;
+      }
+      return inside;
+    }
+    function sample(){
+      particles = [];
+      var tries = 0;
+      while (particles.length < COUNT && tries < COUNT*30){
+        tries++;
+        var x = Math.random(), y = Math.random();
+        if (pointInPoly(x, y, verts)){
+          particles.push({
+            bx:x, by:y,
+            ox:0, oy:0,
+            ph: Math.random()*Math.PI*2,
+            spd: 0.6 + Math.random()*1.2,
+            amp: 0.006 + Math.random()*0.014,
+            r: 0.8 + Math.random()*1.6
+          });
+        }
+      }
+    }
+    sample();
+
+    function draw(now){
+      var W = canvas.clientWidth, H = canvas.clientHeight;
+      if (canvas.width !== W*DPR || canvas.height !== H*DPR){
+        canvas.width = W*DPR; canvas.height = H*DPR;
+        ctx.setTransform(DPR,0,0,DPR,0,0);
+      }
+      ctx.clearRect(0,0,W,H);
+      var t = now / 1000;
+      var breathe = 0.85 + 0.15 * Math.sin(t * 1.4);
+
+      // 中心发光核心（固定居中）
+      var cx = W/2, cy = H/2, coreR = Math.min(W,H) * 0.16 * breathe;
+      var grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, coreR);
+      grad.addColorStop(0, 'rgba(255,92,124,0.28)');
+      grad.addColorStop(0.5, 'rgba(254,44,85,0.12)');
+      grad.addColorStop(1, 'rgba(254,44,85,0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0,0,W,H);
+
+      for (var i = 0; i < particles.length; i++){
+        var p = particles[i];
+
+        // 局部粒子跟随：只有鼠标附近的粒子被向外推开（往外扩）
+        if (!isNaN(mouse.x)){
+          var mxn = mouse.x / W, myn = mouse.y / H;
+          var adx = p.bx - mxn, ady = p.by - myn;
+          var ad = Math.sqrt(adx*adx + ady*ady);
+          var radius = 0.12;
+          if (ad < radius && ad > 0.0001){
+            var strength = (1 - ad / radius) * 0.05;
+            p.ox += (adx / ad) * strength;
+            p.oy += (ady / ad) * strength;
+          }
+        }
+        // 回弹（慢一点）
+        p.ox *= 0.95;
+        p.oy *= 0.95;
+        // 限制最大偏移，保持形状
+        var maxOff = 0.04;
+        var olen = Math.sqrt(p.ox*p.ox + p.oy*p.oy);
+        if (olen > maxOff){
+          p.ox = p.ox / olen * maxOff;
+          p.oy = p.oy / olen * maxOff;
+        }
+
+        // Lissajous 浮动（轻微，保持形状）
+        var lx = Math.sin(t*p.spd + p.ph) * p.amp;
+        var ly = Math.cos(t*p.spd*0.9 + p.ph) * p.amp;
+        var x = (p.bx + p.ox) * W + lx * W;
+        var y = (p.by + p.oy) * H + ly * H;
+        // 距离中心越近越亮
+        var ddx = p.bx - 0.5, ddy = p.by - 0.5;
+        var dc = Math.sqrt(ddx*ddx + ddy*ddy);
+        var alpha = (0.85 - dc*0.9) * breathe;
+        alpha = Math.max(0.06, Math.min(1, alpha));
+        var size = p.r;
+        ctx.fillStyle = 'rgba(255,' + Math.round(120 + dc*80) + ',' + Math.round(150 + dc*60) + ',' + alpha + ')';
+        ctx.beginPath();
+        ctx.arc(x, y, size, 0, Math.PI*2);
+        ctx.fill();
+      }
+      requestAnimationFrame(draw);
+    }
+
+    window.addEventListener('mousemove', function(e){
+      var r = canvas.getBoundingClientRect();
+      var x = e.clientX - r.left, y = e.clientY - r.top;
+      if (x >= 0 && x <= r.width && y >= 0 && y <= r.height){
+        mouse.x = x; mouse.y = y;
+      } else {
+        mouse.x = NaN; mouse.y = NaN;
+      }
     });
-    UI.observeReveal();
-    // 导航锚点平滑滚动
-    document.querySelectorAll('.hnav .links a[href^="#"]').forEach(function(a){
-      a.addEventListener('click',function(e){ e.preventDefault(); var t=document.querySelector(a.getAttribute('href')); if(t) t.scrollIntoView({behavior:'smooth',block:'start'}); });
+
+    var io = new IntersectionObserver(function(es){
+      es.forEach(function(en){ if (en.isIntersecting) requestAnimationFrame(draw); });
+    }, { threshold: 0 });
+    io.observe(canvas);
+    requestAnimationFrame(draw);
+  })();
+
+  // ============ 3. 按钮涟漪 ============
+  (function(){
+    document.querySelectorAll('.btn, .copy-btn').forEach(function(btn){
+      btn.addEventListener('click', function(e){
+        var rect = btn.getBoundingClientRect();
+        var r = document.createElement('span');
+        r.className = 'ripple';
+        var size = Math.max(rect.width, rect.height);
+        r.style.width = r.style.height = size + 'px';
+        r.style.left = (e.clientX - rect.left - size/2) + 'px';
+        r.style.top = (e.clientY - rect.top - size/2) + 'px';
+        btn.appendChild(r);
+        setTimeout(function(){ r.remove(); }, 600);
+      });
     });
-  </script>
+  })();
+
+  // ============ 3.5 磁性按钮（鼠标靠近跟随，magnetic） ============
+  (function(){
+    var FINE = window.matchMedia('(hover:hover) and (pointer:fine)').matches;
+    var RM = window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+    if (!FINE || RM) return;
+    document.querySelectorAll('.btn, .copy-btn, .menu-btn').forEach(function(el){
+      el.addEventListener('mousemove', function(e){
+        var r = el.getBoundingClientRect();
+        var x = e.clientX - r.left - r.width/2;
+        var y = e.clientY - r.top - r.height/2;
+        el.style.transition = 'transform .1s ease-out';
+        el.style.transform = 'translate(' + (x*0.25) + 'px,' + (y*0.35) + 'px)';
+      });
+      el.addEventListener('mouseleave', function(){
+        el.style.transition = 'transform .45s cubic-bezier(.22,.61,.36,1)';
+        el.style.transform = '';
+      });
+    });
+  })();
+
+  // ============ 4. 卡片 3D tilt + 光晕（复刻 DeepSeek function E） ============
+  (function(){
+    var hoverable = !window.matchMedia('(hover: none), (pointer: coarse)').matches;
+    document.querySelectorAll('.tilt').forEach(function(card){
+      var glow = document.createElement('div');
+      glow.className = 'tilt-glow';
+      card.appendChild(glow);
+      if (!hoverable) return;
+
+      card.addEventListener('mousemove', function(e){
+        var r = card.getBoundingClientRect();
+        var x = e.clientX - r.left, y = e.clientY - r.top;
+        var cx = r.width / 2, cy = r.height / 2;
+        glow.style.opacity = 1;
+        glow.style.background = 'radial-gradient(circle 180px at ' + x + 'px ' + y + 'px, rgba(254,44,85,0.16), transparent 70%)';
+        var rx = (cy - y) / cy * 3;
+        var ry = (x - cx) / cx * 3;
+        card.style.transform = 'perspective(800px) rotateX(' + rx + 'deg) rotateY(' + ry + 'deg) scale(1.02)';
+        card.style.transition = 'transform 0.1s ease-out';
+      });
+      card.addEventListener('mouseleave', function(){
+        glow.style.opacity = 0;
+        card.style.transform = 'perspective(800px) rotateX(0deg) rotateY(0deg) scale(1)';
+        card.style.transition = 'transform 0.4s ease-out';
+      });
+    });
+  })();
+
+  // ============ 6. 汉堡菜单（移动端） ============
+  (function(){
+    var menuBtn = document.getElementById('menuBtn');
+    var mobileMenu = document.getElementById('mobileMenu');
+    if (menuBtn && mobileMenu){
+      menuBtn.addEventListener('click', function(){
+        mobileMenu.classList.toggle('open');
+      });
+    }
+  })();
+
+  // ============ 7. 锚点平滑滚动（含移动菜单收起） ============
+  document.querySelectorAll('a[href^="#"]').forEach(function(a){
+    a.addEventListener('click', function(e){
+      var href = a.getAttribute('href');
+      e.preventDefault();
+      if (href === '#top'){
+        window.scrollTo({ top:0, behavior:'smooth' });
+      } else {
+        var t = document.querySelector(href);
+        if (t) t.scrollIntoView({ behavior:'smooth', block:'start' });
+      }
+      // 收起移动端菜单
+      var mm = document.getElementById('mobileMenu');
+      if (mm) mm.classList.remove('open');
+    });
+  });
+
+  // ============ 8. 导航滚动收缩（sticky 平滑缩小成胶囊） ============
+  (function(){
+    var header = document.querySelector('.hnav');
+    if (!header) return;
+    var THRESHOLD = 120;
+    var onScroll = function(){
+      header.classList.toggle('scrolled', window.scrollY > THRESHOLD);
+    };
+    window.addEventListener('scroll', onScroll, { passive:true });
+    onScroll();
+  })();
+</script>
 </body>
 </html>
