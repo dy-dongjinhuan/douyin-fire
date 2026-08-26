@@ -32,7 +32,8 @@ from app.douyin import DouyinChat
 
 from app.history import AlreadyRunningError, History, run_lock
 
-from app.models import Settings, TargetResult
+from app.models import Message, Settings, TargetResult
+from app.ai_text import generate_ai_text
 
 from app.notifier import send_dingtalk_notification
 
@@ -172,7 +173,7 @@ async def run(
 
                     try:
 
-                        LOGGER.info("找到好友: %s", alias)
+                        LOGGER.info("开始处理好友: %s", alias)
 
                         # 按好友顺序从洗牌后的文案池轮询取一条，保证每个好友文案不同
                         msg_text = ""
@@ -186,53 +187,94 @@ async def run(
 
                         # 检测好友框并打开会话；找不到好友框则按 target_open_retries 重试。
                         # 重试逻辑放在这里（而非 open_target 内部），以便每次重试前都能检测停止信号。
-                        _opened = False
-                        _open_err: Exception | None = None
-                        for _att in range(task.target_open_retries + 1):
+                        # 把单个好友的全部处理（打开会话 + 采集火花天数 + 发送）包成一个协程，
+                        # 用 asyncio.wait_for 做 90s 总硬超时兜底：任何未被上面显式超时覆盖的
+                        # 隐蔽卡死都绝不可能超过 90s，超时则该好友跳过、继续下一个，绝不整体卡死。
+                        async def _handle_one() -> int:
+                            opened = False
+                            open_err: Exception | None = None
+                            local_sent = 0
+                            # 发送内容：默认取外层已选好的自定义文案；AI 模式下为每个好友实时生成（失败回退自定义）
+                            msg = message
+                            msg_idx = message_index
+                            msg_txt = msg_text
+                            if (not dry_run) and getattr(task, "content_mode", "custom") == "ai" and (getattr(task, "ai_config", None) or {}).get("api_key"):
+                                try:
+                                    _ai_text = await asyncio.to_thread(generate_ai_text, task.ai_config)
+                                    if _ai_text and _ai_text.strip():
+                                        msg = Message(type="text", content=_ai_text.strip())
+                                        msg_idx = -1
+                                        msg_txt = _ai_text.strip()
+                                except Exception as _e:
+                                    LOGGER.warning("好友「%s」AI 文案生成失败，回退到自定义文案: %s", alias, _e)
+                            for _att in range(task.target_open_retries + 1):
+                                if stop_event is not None and stop_event.is_set():
+                                    LOGGER.info("用户自行停止，剩余好友未发送")
+                                    raise RunStopped("用户已手动停止")
+                                try:
+                                    await chat.open_target(target.name, retries=0)
+                                    opened = True
+                                    break
+                                except Exception as _e:
+                                    open_err = _e
+                                    LOGGER.warning(
+                                        "打开好友「%s」会话失败（第 %d/%d 次）: %r",
+                                        alias, _att + 1, task.target_open_retries + 1, _e,
+                                    )
+                                    if _att < task.target_open_retries:
+                                        await asyncio.sleep(1_500)
+                            if not opened:
+                                if open_err is not None:
+                                    raise open_err
+                                return local_sent
+
+                            # best-effort：采集该好友当前火花天数（用于控制台概览卡片；失败不影响发送）
+                            try:
+                                _days = await chat.read_spark_days(target.name)
+                                if _days:
+                                    _save_spark_days(target.name, _days)
+                            except Exception:
+                                pass
+
+                            # 发送前再次检测停止信号，避免已停止仍发出消息
                             if stop_event is not None and stop_event.is_set():
                                 LOGGER.info("用户自行停止，剩余好友未发送")
                                 raise RunStopped("用户已手动停止")
-                            try:
-                                await chat.open_target(target.name, retries=0)
-                                _opened = True
-                                break
-                            except Exception as _e:
-                                _open_err = _e
-                                if _att < task.target_open_retries:
-                                    await asyncio.sleep(1_500)
-                        if not _opened:
-                            if _open_err is not None:
-                                raise _open_err
 
-                        # 打开会话成功、发送前再次检测停止信号，避免已停止仍发出消息
-                        if stop_event is not None and stop_event.is_set():
-                            LOGGER.info("用户自行停止，剩余好友未发送")
-                            raise RunStopped("用户已手动停止")
+                            if not dry_run and msg is not None:
+                                message_id = _message_id(msg_idx, msg)
+                                key = history.key(task.task_id, run_date, target.name, message_id)
+                                if task.prevent_duplicates and history.contains(key):
+                                    LOGGER.info(
+                                        "跳过当天已处理或结果不确定的消息: %s #%d",
+                                        alias,
+                                        msg_idx + 1,
+                                    )
+                                else:
+                                    if task.prevent_duplicates:
+                                        history.reserve(key)
+                                    await verify_login(page, timeout_ms=3_000)
+                                    await send_message(page, chat, msg, task.stickers)
+                                    if task.prevent_duplicates:
+                                        history.mark_success(key)
+                                    local_sent += 1
+                                    LOGGER.info("文案#%d %s", msg_idx + 1, msg_txt)
+                            return local_sent
 
-                        if not dry_run and target.messages:
-                            message_id = _message_id(message_index, message)
-                            key = history.key(task.task_id, run_date, target.name, message_id)
-                            if task.prevent_duplicates and history.contains(key):
-                                LOGGER.info(
-                                    "跳过当天已处理或结果不确定的消息: %s #%d",
-                                    alias,
-                                    message_index + 1,
-                                )
-                            else:
-                                if task.prevent_duplicates:
-                                    history.reserve(key)
-                                await verify_login(page, timeout_ms=3_000)
-                                await send_message(page, chat, message, task.stickers)
-                                if task.prevent_duplicates:
-                                    history.mark_success(key)
-                                sent += 1
-                                LOGGER.info("文案#%d %s", message_index + 1, msg_text)
+                        try:
+                            sent = await asyncio.wait_for(_handle_one(), timeout=90.0)
+                        except asyncio.TimeoutError:
+                            LOGGER.error(
+                                "好友「%s」处理超过 90s（疑似浏览器卡死），跳过该好友继续下一个",
+                                alias,
+                            )
+                            continue
 
                         results.append(TargetResult(target=target.name, status="success", sent=sent, target_alias=alias))
 
                     except (AuthenticationError, RiskControlError) as exc:
 
-                        LOGGER.exception("找到好友时登录状态失效: %s", alias)
+                        LOGGER.exception("处理好友时登录状态失效: %s", alias)
 
                         screenshot = await _screenshot(page, settings.artifacts_dir, alias)
 
@@ -336,6 +378,24 @@ async def run(
 
 
 
+
+
+def _save_spark_days(name: str, days: int) -> None:
+    """把好友当前火花天数写入 data/spark_days.json（供控制台概览卡片读取）。"""
+    try:
+        data_dir = Path(__file__).resolve().parent.parent / "data"
+        data_dir.mkdir(parents=True, exist_ok=True)
+        p = data_dir / "spark_days.json"
+        data: dict = {}
+        if p.exists():
+            try:
+                data = json.loads(p.read_text(encoding="utf-8") or "{}")
+            except Exception:
+                data = {}
+        data[name] = days
+        p.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception:
+        pass
 
 
 def main() -> int:

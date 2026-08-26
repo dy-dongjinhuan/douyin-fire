@@ -38,8 +38,8 @@ class SearchBoxNotReadyError(RuntimeError):
 
 # 私信页是 SPA，domcontentloaded 之后搜索框由 JS 异步挂载，冷启动时可能超过
 # 单轮等待窗口。这里做有限次数重试，并在需要时 reload，避免把慢渲染误判为认证失效。
-SEARCH_BOX_RETRIES = 3
-_SEARCH_RETRY_DELAY_MS = 1_500
+SEARCH_BOX_RETRIES = 5
+_SEARCH_RETRY_DELAY_MS = 3_000
 
 
 # Collects only safe, whitelisted attributes. It deliberately reads no
@@ -52,19 +52,16 @@ _DOM_SNAPSHOT_JS = """() => {
     placeholder: el.getAttribute('placeholder'),
     role: el.getAttribute('role'),
     aria_label: el.getAttribute('aria-label'),
-    id: el.getAttribute('id'),
-    class_name: el.getAttribute('class'),
   });
   return {
     inputs: Array.from(document.querySelectorAll('input')).map(attrs),
     textareas: Array.from(document.querySelectorAll('textarea')).map(attrs),
     contenteditable_count: document.querySelectorAll('[contenteditable="true"]').length,
     role_textbox_count: document.querySelectorAll('[role="textbox"]').length,
-    frame_count: window.frames ? window.frames.length : 0,
   };
 }"""
 
-_SAFE_ELEMENT_KEYS = ("tag", "type", "placeholder", "role", "aria_label", "id", "class_name")
+_SAFE_ELEMENT_KEYS = ("tag", "type", "placeholder", "role", "aria_label")
 
 
 @dataclass
@@ -120,8 +117,10 @@ async def verify_login(page: Page, timeout_ms: int = 15_000) -> None:
         raise AuthenticationError("未检测到抖音私信页面，登录状态可能失效或页面结构已变化")
 
 
-async def open_private_messages(page: Page, timeout_ms: int = 15_000) -> None:
+async def open_private_messages(page: Page, timeout_ms: int = 40_000) -> None:
     await page.goto(DOUYIN_CHAT_URL, wait_until="domcontentloaded", timeout=45_000)
+    # SPA 首屏渲染需要时间：刚 goto 完就检测常常漏掉搜索框，先稳定 2s 再检测。
+    await page.wait_for_timeout(2_000)
     # 1. Explicit risk-control page takes priority, independently of login state.
     if await _any_visible(page, RISK_MARKERS, timeout_ms=2_000):
         raise RiskControlError("抖音私信页面要求进行安全验证，任务已停止")
@@ -136,7 +135,9 @@ async def open_private_messages(page: Page, timeout_ms: int = 15_000) -> None:
     #    occasionally misses it on a cold runner. Retry a few times, reloading the
     #    page when the first round fails, before concluding anything.
     for attempt in range(1, SEARCH_BOX_RETRIES + 1):
-        matched = await _first_visible_selector(page, SEARCH_INPUTS, timeout_ms)
+        # 首轮给足大窗口：实测 SPA 搜索框挂载要 ~35s，旧 15s 窗口必然差一口气
+        # （表现为"总是第 3 次才检测到"）。后续轮次用 15s 兜底。
+        matched = await _first_visible_selector(page, SEARCH_INPUTS, timeout_ms if attempt == 1 else 15_000)
         if matched is not None:
             LOGGER.info("检测到好友搜索框: selector=%s, 第 %d 次尝试", matched, attempt)
             await page.wait_for_timeout(3_000)
@@ -149,15 +150,9 @@ async def open_private_messages(page: Page, timeout_ms: int = 15_000) -> None:
             raise AuthenticationError("进入抖音私信页面后登录状态失效")
         if attempt < SEARCH_BOX_RETRIES:
             LOGGER.warning("未检测到好友搜索框，第 %d/%d 次尝试，准备重试", attempt, SEARCH_BOX_RETRIES)
-            if attempt == 1:
-                # Reload once: a fresh load usually mounts the SPA search box.
-                try:
-                    await page.reload(wait_until="domcontentloaded", timeout=45_000)
-                except Exception:
-                    LOGGER.exception("reload 失败，改为重新访问私信页面")
-                    await page.goto(DOUYIN_CHAT_URL, wait_until="domcontentloaded", timeout=45_000)
-            else:
-                await page.wait_for_timeout(_SEARCH_RETRY_DELAY_MS)
+            # 不 reload：reload 会重新加载整个 SPA、搜索框挂载计时归零，反而更慢更浪费；
+            # 等待页面自行完成挂载即可。
+            await page.wait_for_timeout(5_000)
 
     # 4. Search box is still missing after all attempts: emit a safe structural
     #    diagnostic and choose the exception type based on evidence. Only an

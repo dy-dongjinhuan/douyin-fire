@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%3E%3Cpath%20d='M12%203l1.8%205.2L19%2010l-5.2%201.8L12%2017l-1.8-5.2L5%2010z'%20fill='%23ff375f'/%3E%3C/svg%3E">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>管理后台 - 抖音自动续火花</title>
+<style>
+.select{ position:relative; min-width:150px; }
+.select-trigger{ width:100%; display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:12px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.14); color:#f5f6fa; font-size:13.5px; cursor:pointer; transition:border-color .18s; }
+.select-trigger:hover{ border-color:rgba(255,255,255,.24); }
+.select-trigger.open{ border-color:rgba(255,55,95,.5); }
+.select-trigger .st-value{ flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.select-trigger .st-value.placeholder{ color:rgba(245,246,250,.42); }
+.select-trigger .st-caret{ transition:transform .2s; color:rgba(245,246,250,.5); }
+.select-trigger.open .st-caret{ transform:rotate(180deg); }
+.select-pop{ position:absolute; top:calc(100% + 6px); left:0; right:0; z-index:80; background:#1a1a22; border:1px solid rgba(255,255,255,.14); border-radius:12px; box-shadow:0 18px 50px rgba(0,0,0,.55); padding:6px; opacity:0; transform:translateY(-6px) scale(.98); pointer-events:none; transition:opacity .2s, transform .2s cubic-bezier(.34,1.56,.64,1); max-height:280px; overflow:auto; }
+.select-pop.open{ opacity:1; transform:none; pointer-events:auto; }
+.select-opt{ display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:8px; font-size:13.5px; cursor:pointer; }
+.select-opt:hover{ background:rgba(255,255,255,.07); }
+.select-opt.sel{ background:rgba(255,55,95,.14); }
+.select-opt .check{ margin-left:auto; color:#ff5a7a; opacity:0; }
+.select-opt.sel .check{ opacity:1; }
+.datepicker{ position:relative; }
+.dp-trigger{ width:100%; display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:12px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.14); color:#f5f6fa; font-size:13.5px; cursor:pointer; }
+.dp-trigger.open{ border-color:rgba(255,55,95,.5); }
+.dp-trigger .dp-value.placeholder{ color:rgba(245,246,250,.42); }
+.dp-pop{ position:absolute; top:calc(100% + 6px); left:0; z-index:80; width:300px; background:#1a1a22; border:1px solid rgba(255,255,255,.14); border-radius:14px; box-shadow:0 18px 50px rgba(0,0,0,.55); padding:14px; opacity:0; transform:translateY(-6px) scale(.98); pointer-events:none; transition:opacity .2s, transform .2s cubic-bezier(.34,1.56,.64,1); }
+.dp-pop.open{ opacity:1; transform:none; pointer-events:auto; }
+.dp-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+.dp-title{ font-size:13.5px; font-weight:600; }
+.dp-nav button{ width:30px; height:30px; border-radius:8px; border:1px solid rgba(255,255,255,.14); background:rgba(255,255,255,.06); color:#f5f6fa; cursor:pointer; }
+.dp-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
+.dp-dow{ font-size:11px; color:rgba(245,246,250,.4); text-align:center; padding:4px 0; }
+.dp-day{ aspect-ratio:1; display:grid; place-items:center; border-radius:8px; font-size:13px; cursor:pointer; }
+.dp-day:hover{ background:rgba(255,255,255,.07); }
+.dp-day.muted{ color:rgba(245,246,250,.4); }
+.dp-day.today{ color:#ff5a7a; font-weight:700; }
+.dp-day.sel{ background:#ff375f; color:#fff; font-weight:600; }
+.dp-foot{ display:flex; justify-content:space-between; margin-top:12px; }
+</style>
+<script src="uikit.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --glass-bg: rgba(255, 255, 255, 0.10);
+    --glass-bg-strong: rgba(255, 255, 255, 0.16);
+    --glass-border: rgba(255, 255, 255, 0.22);
+    --glass-border-soft: rgba(255, 255, 255, 0.14);
+    --text: #f5f6fa;
+    --text-dim: rgba(245, 246, 250, 0.62);
+    --text-faint: rgba(245, 246, 250, 0.42);
+    --accent: #ff375f;
+    --accent-soft: rgba(255, 55, 95, 0.16);
+    --green: #34d399;
+    --amber: #fbbf24;
+    --radius: 22px;
+    --radius-sm: 14px;
+    --shadow: 0 8px 32px rgba(0, 0, 0, 0.28);
+  }
+
+  html, body { min-height: 100%; }
+
+  /* ===== 红色自定义滚动条 ===== */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 999px; }
+  ::-webkit-scrollbar-thumb { background: #ff5a5a; border-radius: 999px; }
+  ::-webkit-scrollbar-thumb:hover { background: #ff7a7a; }
+  html { scrollbar-color: #ff5a5a rgba(255,255,255,0.05); scrollbar-width: thin; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: var(--text);
+    min-height: 100vh;
+    padding: 28px 18px calc(28px + env(safe-area-inset-bottom));
+    position: relative;
+    overflow-x: hidden;
+    /* 高级黑：深炭黑为底，顶部柔光营造层次，边缘自然压暗，纯静态无动效 */
+    background-color: #08080c;
+    background-image:
+      radial-gradient(130% 90% at 50% -15%, rgba(46,46,60,0.55) 0%, rgba(20,20,28,0.10) 42%, rgba(8,8,12,0) 70%),
+      radial-gradient(120% 120% at 50% 118%, rgba(255,55,95,0.07) 0%, rgba(255,55,95,0) 52%),
+      linear-gradient(180deg, #0b0b10 0%, #08080c 42%, #050507 100%);
+    background-attachment: fixed;
+  }
+
+  /* 极淡颗粒质感，强化高级黑观感（静态，无动画） */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.045;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 180px 180px;
+  }
+
+  .wrap { position: relative; z-index: 1; max-width: 980px; margin: 0 auto; }
+
+  .top {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 14px; flex-wrap: wrap;
+    padding: 20px 26px;
+    margin-bottom: 20px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border-soft);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,0.18);
+  }
+  .top h1 { font-size: 22px; font-weight: 700; letter-spacing: 0.3px; }
+  .top span { color: var(--text-dim); font-size: 13px; }
+  .top > div:last-child { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  /* ===== 玻璃按钮 ===== */
+  .btn {
+    padding: 11px 20px;
+    border: 1px solid var(--glass-border);
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--text);
+    background: var(--glass-bg-strong);
+    transition: transform 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.22);
+  }
+  .btn:hover:not(:disabled) { transform: translateY(-2px); background: rgba(255,255,255,0.24); box-shadow: 0 8px 22px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.3); }
+  .btn:active:not(:disabled) { transform: translateY(0); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #ff375f 0%, #ff5e7e 100%);
+    border-color: rgba(255,255,255,0.3); color: #fff;
+    box-shadow: 0 8px 22px rgba(255,55,95,0.32), inset 0 1px 0 rgba(255,255,255,0.4);
+  }
+  .btn-primary:hover:not(:disabled) { background: linear-gradient(135deg, #ff4d6e 0%, #ff7d98 100%); }
+
+  .btn-sm { padding: 7px 14px; font-size: 13px; }
+  .btn-ghost { background: rgba(255,255,255,0.08); border-color: var(--glass-border); }
+  .btn-ghost:hover:not(:disabled) { background: rgba(255,255,255,0.18); }
+  .btn-danger { background: #ef4444; border-color: #ef4444; color: #fff; }
+  .btn-danger:hover:not(:disabled) { background: #dc2626; border-color: #dc2626; }
+
+  /* 批量操作栏 */
+  .batch-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+  tr.selected td { background: rgba(255,55,95,0.12); }
+  #selectAll, .row-cb { width: 16px; height: 16px; cursor: pointer; accent-color: #ff375f; }
+
+  /* ===== 毛玻璃卡片 ===== */
+  .card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border-soft);
+    border-radius: var(--radius);
+    padding: 22px 24px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,0.18);
+  }
+  .card h2 {
+    font-size: 16px; font-weight: 700; color: var(--text);
+    margin-bottom: 16px; display: flex; align-items: center; gap: 9px; letter-spacing: 0.2px;
+  }
+  .card h2 .ico {
+    width: 30px; height: 30px; border-radius: 10px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--accent-soft); border: 1px solid rgba(255,55,95,0.3); font-size: 16px;
+  }
+
+  .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+
+  /* 密钥收起（脱敏）状态：用圆点占位，点击可临时显示 */
+  .code-mask {
+    font-family: inherit; letter-spacing: 2px; color: var(--text-dim);
+    cursor: pointer; user-select: none; transition: color 0.2s;
+  }
+  .code-mask:hover { color: #7dd3fc; }
+  .code-reveal { color: #7dd3fc; letter-spacing: 1px; word-break: break-all; }
+  select, input[type="number"], input[type="date"] {
+    padding: 11px 14px; border: 1px solid var(--glass-border); border-radius: var(--radius-sm);
+    font-size: 14px; color: var(--text); font-family: inherit;
+    background: rgba(0, 0, 0, 0.22);
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  input[type="date"] { color-scheme: dark; }
+  input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.8); cursor: pointer; }
+  select:focus, input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255,55,95,0.18); background: rgba(0,0,0,0.30); }
+  select option { background: #1a1038; color: var(--text); }
+
+  /* ===== 表格 ===== */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 11px 12px; text-align: left; border-bottom: 1px solid var(--glass-border-soft); }
+  th { color: var(--text-dim); font-weight: 500; }
+  tbody tr:hover { background: rgba(255,255,255,0.04); }
+
+  .code-box {
+    background: rgba(0,0,0,0.22);
+    border: 1px solid var(--glass-border-soft);
+    border-radius: var(--radius-sm);
+    padding: 14px; margin-top: 14px;
+  }
+  .code-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 14px; border: 1px dashed var(--glass-border); border-radius: var(--radius-sm); margin-bottom: 8px;
+  }
+  .code-item code { font-size: 15px; color: #7dd3fc; letter-spacing: 1px; word-break: break-all; }
+
+  .tag { font-size: 12px; padding: 3px 10px; border-radius: 10px; font-weight: 500; }
+  .tag-free { background: rgba(16,185,129,0.18); color: #34d399; }
+  .tag-used { background: rgba(239,68,68,0.18); color: #f87171; }
+  .tag-exp { background: rgba(251,191,36,0.18); color: #fbbf24; }
+  .tag-admin { background: rgba(99,102,241,0.20); color: #a5b4fc; }
+
+  .msg { font-size: 13.5px; margin-top: 12px; }
+  .msg.ok { color: #a7f3d0; }
+  .msg.err { color: #fecaca; }
+  .table-scroll { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* ===== 手机端适配 ===== */
+  @media (max-width: 768px) {
+    body { padding: 14px; }
+    .wrap { max-width: 100%; }
+    .top { flex-direction: column; align-items: stretch; gap: 12px; margin-bottom: 16px; padding: 16px; }
+    .top h1 { font-size: 19px; }
+    .top > div:last-child { display: flex; gap: 8px; }
+    .top > div:last-child .btn { flex: 1 1 auto; justify-content: center; }
+    .card { padding: 16px; margin-bottom: 14px; }
+    .card h2 { font-size: 15px; }
+    .row { gap: 8px; flex-direction: column; align-items: stretch; }
+    .row select, .row input { width: 100% !important; }
+    .row .btn { width: 100%; }
+    select, input { font-size: 14px; }
+    table { font-size: 12px; }
+    th, td { padding: 7px 8px; white-space: nowrap; }
+    .code-item { flex-wrap: wrap; gap: 6px; }
+    .code-item code { font-size: 13px; }
+  }
+  @media (max-width: 380px) {
+    .top h1 { font-size: 17px; }
+    body { padding: 10px; }
+  }
+  @supports (padding: env(safe-area-inset-left)) {
+    @media (max-width: 768px) {
+      body { padding-left: max(14px, env(safe-area-inset-left)); padding-right: max(14px, env(safe-area-inset-right)); }
+    }
+  }
+
+  /* ===== 动画与美化增强 ===== */
+  .top h1 { animation: titleGlow 3.2s ease-in-out infinite; }
+  @keyframes titleGlow {
+    0%, 100% { text-shadow: 0 0 10px rgba(255,55,95,0.22); }
+    50%      { text-shadow: 0 0 22px rgba(255,55,95,0.50); }
+  }
+  .card { transition: transform 0.35s cubic-bezier(0.2,0.8,0.3,1), box-shadow 0.35s ease; will-change: transform; }
+  .card:hover { transform: translateY(-5px); box-shadow: 0 18px 48px rgba(0,0,0,0.36), inset 0 1px 0 rgba(255,255,255,0.22); }
+  .btn { will-change: transform; }
+
+  /* ===== 背景火花粒子（已移除，背景保持纯黑） ===== */
+
+  /* ===== 高级黑增强套件（与控制台一致，单色抖音红系，不彩虹） ===== */
+  /* 顶部滚动进度细线 */
+  #scrollProgress {
+    position: fixed; top: 0; left: 0; height: 3px; width: 0%;
+    background: linear-gradient(90deg, var(--accent), #ff8aa6, var(--accent));
+    background-size: 220% 100%;
+    z-index: 9999; pointer-events: none;
+    box-shadow: 0 0 10px rgba(255,55,95,.7);
+    animation: progressFlow 2.4s linear infinite;
+  }
+  @keyframes progressFlow { to { background-position: 220% 0; } }
+
+  /* 卡片 hover 流动渐变描边（抖音红系） */
+  .card { position: relative; }
+  .card::after {
+    content: ""; position: absolute; inset: 0; border-radius: inherit;
+    padding: 1.5px; pointer-events: none; opacity: 0;
+    background: linear-gradient(120deg, #ff375f, #ff9ab2, #ff375f, #ff9ab2);
+    background-size: 300% 300%;
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude;
+    transition: opacity .35s ease;
+    animation: borderFlow 3.5s linear infinite;
+  }
+  .card:hover::after { opacity: 1; }
+  @keyframes borderFlow { to { background-position: 300% 0; } }
+
+  /* 按钮涟漪 */
+  .btn { position: relative; overflow: hidden; }
+  .btn .ripple {
+    position: absolute; border-radius: 50%; transform: scale(0);
+    background: rgba(255,255,255,.35); pointer-events: none;
+    animation: ripple .6s ease-out forwards;
+  }
+  @keyframes ripple { to { transform: scale(2.6); opacity: 0; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    #scrollProgress, .card::after { animation: none !important; }
+  }
+
+  /* ===== 统一线性图标系统（替换 emoji，去 AI 味） ===== */
+  .icon, .ico > svg, .logo-ico, .user-ico {
+    stroke: currentColor; fill: none;
+    stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round;
+  }
+  .icon { width: 17px; height: 17px; display: inline-block; vertical-align: -0.22em; flex-shrink: 0; }
+  .icon-sm { width: 14px; height: 14px; }
+  .icon-amber { color: var(--amber); }
+  .logo-ico { width: 24px; height: 24px; color: var(--accent); vertical-align: -0.32em; margin-right: 5px; }
+  .ico > svg { width: 17px; height: 17px; color: #ff708f; }
+  .icon-stop { fill: currentColor; stroke: none; }
+
+</style>
+</head>
+<body>
+<svg class="icon-sprite" aria-hidden="true" focusable="false" style="position:absolute;width:0;height:0;overflow:hidden"><defs>
+<symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></symbol>
+<symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1"/></symbol>
+<symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="8" r="4"/><path d="M11 11l9 9M16 16l2.5-2.5M13.5 13.5 16 11"/></symbol>
+<symbol id="i-crown" viewBox="0 0 24 24"><path d="M3 8l4.5 3.5L12 5l4.5 6.5L21 8l-1.5 11h-15z"/><path d="M8 19v-3M16 19v-3"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3.5 2"/></symbol>
+<symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0M16 5.5a3 3 0 0 1 0 6M16.5 19a5.5 5.5 0 0 0-1.5-3.8"/></symbol>
+<symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M4 7l8 6 8-6"/></symbol>
+<symbol id="i-send" viewBox="0 0 24 24"><path d="M22 2 11 13M22 2 2 9l9 4 4 9z"/></symbol>
+<symbol id="i-flask" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3"/><path d="M7.5 14h9"/></symbol>
+<symbol id="i-stop" viewBox="0 0 24 24"><rect x="6.5" y="6.5" width="11" height="11" rx="2.5"/></symbol>
+<symbol id="i-save" viewBox="0 0 24 24"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3M8 21v-6h8v6"/></symbol>
+<symbol id="i-doc" viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M9.5 13h5M9.5 16.5h5"/></symbol>
+<symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1.1"/><circle cx="4" cy="12" r="1.1"/><circle cx="4" cy="18" r="1.1"/></symbol>
+<symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 3.5l8.5 15H3.5z"/><path d="M12 9.5v4.5M12 16.5h.01"/></symbol>
+<symbol id="i-card" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M2.5 10h19M6.5 15h4"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></symbol>
+<symbol id="i-cross" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+<symbol id="i-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+<symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></symbol>
+<symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4M7.5 9l4.5-5 4.5 5"/><path d="M4 17v2.5A1.5 1.5 0 0 0 5.5 21h13a1.5 1.5 0 0 0 1.5-1.5V17"/></symbol>
+<symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6"/><path d="M5 20a7 7 0 0 1 14 0"/></symbol>
+</defs></svg>
+
+<div id="scrollProgress"></div>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <h1><svg class="logo-ico" viewBox="0 0 24 24"><use href="#i-gear"/></svg>管理后台</h1>
+      <span>抖音自动续火花 · 卡密与用户管理</span>
+    </div>
+    <div>
+      <button class="btn btn-ghost btn-sm" onclick="goHome()">← 返回控制台</button>
+      <button class="btn btn-ghost btn-sm" onclick="doLogout()">退出</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="ico"><svg viewBox="0 0 24 24"><use href="#i-key"/></svg></span>生成密钥（卡密）</h2>
+    <div class="row">
+      <select id="cardType" style="display:none">
+        <option value="week">周卡（7 天）</option>
+        <option value="month">月卡（30 天）</option>
+        <option value="year">年卡（365 天）</option>
+        <option value="permanent">永久卡</option>
+      </select>
+      <div class="select" id="cardTypeUI"></div>
+      <input type="number" id="count" value="1" min="1" max="100" style="width:90px;">
+      <button class="btn btn-primary" onclick="generate()">生成密钥</button>
+    </div>
+    <div class="msg" id="genMsg"></div>
+    <div class="code-box" id="genResult" style="display:none;"></div>
+  </div>
+
+  <div class="card" id="codesCard">
+    <h2><span class="ico"><svg viewBox="0 0 24 24"><use href="#i-list"/></svg></span>已生成密钥
+      <span id="codesSummary" style="font-size:13px;font-weight:normal;color:var(--text-dim);margin-right:4px;"></span>
+      <button class="btn btn-ghost btn-sm" id="toggleCodes" onclick="toggleCodes()" style="margin-left:auto;font-size:12px;"><svg class="icon" viewBox="0 0 24 24"><use href="#i-chevron"/></svg>展开</button>
+    </h2>
+    <div id="codesDetail" style="display:none;">
+    <div class="row" style="margin-bottom:8px;">
+      <input type="text" id="fKey" placeholder="搜索密钥（关键字）" style="width:200px;">
+      <select id="fStatus" style="display:none">
+        <option value="">全部状态</option>
+        <option value="unused">未使用</option>
+        <option value="used">已使用</option>
+      </select>
+      <div class="select" id="fStatusUI"></div>
+      <select id="fType" style="display:none">
+        <option value="">全部类型</option>
+        <option value="week">周卡</option>
+        <option value="month">月卡</option>
+        <option value="year">年卡</option>
+        <option value="permanent">永久卡</option>
+      </select>
+      <div class="select" id="fTypeUI"></div>
+      <input type="date" id="fFrom" style="display:none" title="创建时间（起始）">
+      <div class="datepicker" id="fFromUI" style="width:160px"></div>
+      <span style="color:var(--text-dim);">至</span>
+      <input type="date" id="fTo" style="display:none" title="创建时间（结束）">
+      <div class="datepicker" id="fToUI" style="width:160px"></div>
+      <button class="btn btn-primary btn-sm" onclick="loadData()">筛选</button>
+      <button class="btn btn-ghost btn-sm" onclick="resetFilters()">重置</button>
+      <span id="filterCount" style="color:var(--text-dim);font-size:13px;"></span>
+    </div>
+    <div class="batch-bar" id="batchBar" style="display:none;">
+      <span id="selCount" style="color:var(--text-dim);font-size:13px;"></span>
+      <button class="btn btn-primary btn-sm" onclick="batchMark(true)">标记为已使用</button>
+      <button class="btn btn-ghost btn-sm" onclick="batchMark(false)">标记为未使用</button>
+      <button class="btn btn-danger btn-sm" onclick="batchDelete()">批量删除</button>
+    </div>
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th style="width:36px;"><input type="checkbox" id="selectAll" onclick="toggleAll(this)"></th><th>密钥</th><th>类型</th><th>状态</th><th>使用人</th><th>创建时间</th></tr></thead>
+      <tbody id="codesBody"></tbody>
+    </table>
+    </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="ico"><svg viewBox="0 0 24 24"><use href="#i-users"/></svg></span>已注册用户</h2>
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>用户名</th><th>角色</th><th>卡类型</th><th>到期时间</th><th>状态</th><th>注册时间</th></tr></thead>
+      <tbody id="usersBody"></tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
+<script>
+function goHome() { location.href = "/app"; }
+function doLogout() {
+  fetch("/api/auth/logout", { method: "POST", credentials: "include" }).then(() => location.href = "/login");
+}
+
+// 已生成密钥是否折叠（收纳）。true = 折叠（默认收纳，隐藏整段列表）
+let codesCollapsed = true;
+// 已勾选的密钥集合（按 code 记录，跨筛选保留）
+const _selected = new Set();
+
+// 折叠 / 展开整个密钥列表（收纳起来 vs 展开查看）
+function toggleCodes() {
+  codesCollapsed = !codesCollapsed;
+  const detail = document.getElementById("codesDetail");
+  if (detail) detail.style.display = codesCollapsed ? "none" : "block";
+  const btn = document.getElementById("toggleCodes");
+  if (btn) btn.innerHTML = codesCollapsed ? '<svg class="icon" viewBox="0 0 24 24"><use href="#i-chevron"/></svg>展开' : '<svg class="icon" viewBox="0 0 24 24" style="transform:rotate(180deg)"><use href="#i-chevron"/></svg>收起';
+}
+
+function renderCode(code) {
+  return `<code class="code-reveal">${code}</code>`;
+}
+
+async function loadData() {
+  const fStatus = document.getElementById("fStatus").value;
+  const fType = document.getElementById("fType").value;
+  const fFrom = document.getElementById("fFrom").value;
+  const fTo = document.getElementById("fTo").value;
+  const fKey = (document.getElementById("fKey").value || "").trim().toLowerCase();
+  const qs = new URLSearchParams();
+  if (fStatus) qs.set("status", fStatus);
+  if (fType) qs.set("type", fType);
+  if (fFrom) qs.set("date_from", fFrom);
+  if (fTo) qs.set("date_to", fTo);
+
+  const [codes, users] = await Promise.all([
+    fetch("/api/admin/codes?" + qs.toString(), { credentials: "include" }).then(r => r.json()),
+    fetch("/api/admin/users", { credentials: "include" }).then(r => r.json()),
+  ]);
+  const codeList = codes.codes || [];
+  const sum = document.getElementById("codesSummary");
+  if (sum) sum.textContent = "共 " + codeList.length + " 条";
+  // 按密钥关键字做前端二次筛选（后端已做状态/类型/时间筛选）
+  const rows = fKey ? codeList.filter(c => (c.code || "").toLowerCase().includes(fKey)) : codeList;
+  const cb = document.getElementById("codesBody");
+  cb.innerHTML = rows.map(c => {
+    const used = c.used_by && c.used_by !== "pending";
+    const tag = used
+      ? `<span class="tag tag-used">已使用</span>`
+      : `<span class="tag tag-free">未使用</span>`;
+    const checked = _selected.has(c.code) ? "checked" : "";
+    const selCls = _selected.has(c.code) ? " class=\"selected\"" : "";
+    return `<tr${selCls}><td><input type="checkbox" class="row-cb" value="${c.code}" ${checked} onchange="onRowCheck(this,'${c.code}')"></td><td>${renderCode(c.code)}</td><td>${c.type_label}</td><td>${tag}</td><td>${used ? c.used_by : "-"}</td><td>${c.created_at}</td></tr>`;
+  }).join("") || `<tr><td colspan="6" style="color:#9ca3af">暂无卡密</td></tr>`;
+
+  document.getElementById("filterCount").textContent = rows.length
+    ? `共 ${rows.length} 条` : "";
+
+  syncSelectAll();
+  updateBatchBar();
+
+  const ub = document.getElementById("usersBody");
+  ub.innerHTML = (users.users || []).map(u => {
+    const role = u.role === "admin"
+      ? `<span class="tag tag-admin">管理员</span>`
+      : `<span class="tag tag-free">会员</span>`;
+    const exp = u.expired
+      ? `<span class="tag tag-exp">已过期</span>`
+      : `<span class="tag tag-free">正常</span>`;
+    return `<tr><td>${u.username}</td><td>${role}</td><td>${u.card_type}</td><td>${u.expires_at || "永久"}</td><td>${exp}</td><td>${u.created_at || "-"}</td></tr>`;
+  }).join("") || `<tr><td colspan="6" style="color:#9ca3af">暂无用户</td></tr>`;
+}
+
+// 单选：维护勾选集合，并同步行高亮与全选框状态
+function onRowCheck(el, code) {
+  if (el.checked) _selected.add(code); else _selected.delete(code);
+  el.closest("tr").classList.toggle("selected", el.checked);
+  syncSelectAll();
+  updateBatchBar();
+}
+
+// 全选/取消全选（作用于当前可见行）
+function toggleAll(el) {
+  const all = el.checked;
+  document.querySelectorAll(".row-cb").forEach(cb => {
+    if (all) _selected.add(cb.value); else _selected.delete(cb.value);
+    cb.closest("tr").classList.toggle("selected", all);
+  });
+  updateBatchBar();
+}
+
+// 根据可见行同步全选框的半选/全选状态
+function syncSelectAll() {
+  const boxes = Array.from(document.querySelectorAll(".row-cb"));
+  const sel = document.getElementById("selectAll");
+  if (!sel) return;
+  sel.checked = boxes.length > 0 && boxes.every(b => _selected.has(b.value));
+  sel.indeterminate = boxes.some(b => _selected.has(b.value)) && !sel.checked;
+}
+
+// 显示/隐藏批量操作栏
+function updateBatchBar() {
+  const bar = document.getElementById("batchBar");
+  const cnt = document.getElementById("selCount");
+  if (!bar) return;
+  const n = _selected.size;
+  bar.style.display = n > 0 ? "flex" : "none";
+  if (cnt) cnt.textContent = n > 0 ? `已选 ${n} 个` : "";
+}
+
+// 批量删除
+async function batchDelete() {
+  const codes = Array.from(_selected);
+  if (!codes.length) return;
+  if (!confirm(`确定删除选中的 ${codes.length} 个密钥？此操作不可恢复。`)) return;
+  try {
+    const r = await fetch("/api/admin/codes/delete", {
+      method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include",
+      body: JSON.stringify({ codes }),
+    });
+    const d = await r.json();
+    if (r.ok && d.ok) {
+      _selected.clear();
+      loadData();
+    } else {
+      alert(d.error || "删除失败");
+    }
+  } catch (e) {
+    alert("网络错误: " + e.message);
+  }
+}
+
+// 批量标记为已使用/未使用
+async function batchMark(used) {
+  const codes = Array.from(_selected);
+  if (!codes.length) return;
+  const label = used ? "已使用" : "未使用";
+  if (!confirm(`确定将选中的 ${codes.length} 个密钥标记为「${label}」？`)) return;
+  try {
+    const r = await fetch("/api/admin/codes/mark", {
+      method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include",
+      body: JSON.stringify({ codes, used }),
+    });
+    const d = await r.json();
+    if (r.ok && d.ok) {
+      loadData();
+    } else {
+      alert(d.error || "操作失败");
+    }
+  } catch (e) {
+    alert("网络错误: " + e.message);
+  }
+}
+
+function resetFilters() {
+  document.getElementById("fStatus").value = "";
+  document.getElementById("fType").value = "";
+  document.getElementById("fFrom").value = "";
+  document.getElementById("fTo").value = "";
+  document.getElementById("fKey").value = "";
+  loadData();
+}
+
+async function generate() {
+  const msg = document.getElementById("genMsg");
+  const box = document.getElementById("genResult");
+  msg.className = "msg";
+  box.style.display = "none";
+  try {
+    const resp = await fetch("/api/admin/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        card_type: document.getElementById("cardType").value,
+        count: parseInt(document.getElementById("count").value, 10) || 1,
+      }),
+    });
+    const data = await resp.json();
+    if (resp.ok && data.ok) {
+      msg.className = "msg ok";
+      const codes = data.codes || [];
+      msg.textContent = "生成成功，请妥善保存以下密钥：";
+      box.style.display = "block";
+      // 当生成的密钥超过两个时，显示“全部复制”按钮（换行分隔）
+      let headerHtml = "";
+      if (codes.length > 2) {
+        headerHtml = `<div style="display:flex; justify-content:flex-end; margin-bottom:10px;">
+          <button class="btn btn-primary btn-sm" onclick="copyAll()">📑 全部复制（${codes.length} 个）</button>
+        </div>`;
+      }
+      box.innerHTML = headerHtml + codes.map(c =>
+        `<div class="code-item"><code>${c}</code><button class="btn btn-ghost btn-sm" onclick="copyCode('${c}')">复制</button></div>`
+      ).join("");
+      generateStore(codes);
+      loadData();
+    } else {
+      msg.className = "msg err";
+      msg.textContent = data.error || "生成失败";
+    }
+  } catch (err) {
+    msg.className = "msg err";
+    msg.textContent = "网络错误: " + err.message;
+  }
+}
+
+// 暂存最近一次生成的密钥，供“全部复制”使用（换行分隔）
+let _lastCodes = [];
+async function generateStore(codes) { _lastCodes = codes || []; }
+
+function copyCode(code) {
+  navigator.clipboard.writeText(code).then(() => {
+    alert("已复制：" + code);
+  }).catch(() => {
+    fallbackCopy(code);
+  });
+}
+
+function copyAll() {
+  const text = _lastCodes.join("\n");
+  navigator.clipboard.writeText(text).then(() => {
+    alert("已复制全部 " + _lastCodes.length + " 个密钥（已用换行分隔）");
+  }).catch(() => {
+    fallbackCopy(text);
+  });
+}
+
+// 剪贴板不可用时降级方案
+function fallbackCopy(text) {
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.style.position = "fixed";
+  ta.style.opacity = "0";
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand("copy"); alert("已复制"); }
+  catch (e) { alert("复制失败，请手动选择"); }
+  document.body.removeChild(ta);
+}
+
+loadData();
+</script>
+
+<script>
+/* ===== 增强：滚动进度 + 按钮涟漪 + 卡片 3D 倾斜（与控制台一致） ===== */
+(function () {
+  const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const isTouch = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+
+  const bar = document.getElementById("scrollProgress");
+  if (bar) {
+    const upd = () => {
+      const h = document.documentElement.scrollHeight - window.innerHeight;
+      bar.style.width = (h > 0 ? (window.scrollY / h) * 100 : 0) + "%";
+    };
+    window.addEventListener("scroll", upd, { passive: true });
+    window.addEventListener("resize", upd);
+    upd();
+  }
+
+  document.addEventListener("click", function (e) {
+    const btn = e.target.closest(".btn");
+    if (!btn) return;
+    const r = btn.getBoundingClientRect();
+    const size = Math.max(r.width, r.height);
+    const span = document.createElement("span");
+    span.className = "ripple";
+    span.style.width = span.style.height = size + "px";
+    span.style.left = (e.clientX - r.left - size / 2) + "px";
+    span.style.top = (e.clientY - r.top - size / 2) + "px";
+    btn.appendChild(span);
+    setTimeout(() => span.remove(), 600);
+  });
+
+  if (reduce || isTouch) return;
+})();
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+  if (!window.UI) return;
+  new UI.Select(document.getElementById("cardTypeUI"), {
+    options:[{value:"week",label:"周卡（7 天）"},{value:"month",label:"月卡（30 天）"},{value:"year",label:"年卡（365 天）"},{value:"permanent",label:"永久卡"}],
+    value: document.getElementById("cardType").value || "week", placeholder:"选择卡类型", searchable:false,
+    onChange:function(v){ document.getElementById("cardType").value = v; }
+  });
+  new UI.Select(document.getElementById("fStatusUI"), {
+    options:[{value:"",label:"全部状态"},{value:"unused",label:"未使用"},{value:"used",label:"已使用"}],
+    value:"", placeholder:"状态", searchable:false, onChange:function(v){ document.getElementById("fStatus").value = v; }
+  });
+  new UI.Select(document.getElementById("fTypeUI"), {
+    options:[{value:"",label:"全部类型"},{value:"week",label:"周卡"},{value:"month",label:"月卡"},{value:"year",label:"年卡"},{value:"permanent",label:"永久卡"}],
+    value:"", placeholder:"类型", searchable:false, onChange:function(v){ document.getElementById("fType").value = v; }
+  });
+  new UI.DatePicker(document.getElementById("fFromUI"), { placeholder:"起始日期", onChange:function(v){ document.getElementById("fFrom").value = v || ""; } });
+  new UI.DatePicker(document.getElementById("fToUI"), { placeholder:"结束日期", onChange:function(v){ document.getElementById("fTo").value = v || ""; } });
+});
+</script>
+</body>
+</html>

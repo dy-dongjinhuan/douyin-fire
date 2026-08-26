@@ -73,6 +73,23 @@
   .msg-item .msg-del:active{ transform:scale(.95); }
   .msg-item .msg-del svg{ display:block; }
 
+  /* 发送内容来源：分段开关（滑动指示块动效） + AI 配置面板 */
+  .seg{ position:relative; display:inline-flex; padding:3px; background:var(--surface-2); border:1px solid var(--hairline); border-radius:10px; gap:2px; overflow:hidden; }
+  .seg .seg-thumb{ position:absolute; top:3px; bottom:3px; left:3px; width:50%; border-radius:8px; background:var(--red-soft); border:1px solid rgba(255,77,79,.32); box-shadow:0 0 14px rgba(255,55,95,.16); transition:left .3s var(--ease-spring), width .3s var(--ease-spring), box-shadow .3s var(--ease); }
+  .seg .seg-btn{ position:relative; z-index:1; flex:0 0 auto; padding:6px 16px; border:none; background:transparent; color:var(--text-3); font-size:12.5px; font-weight:600; border-radius:8px; cursor:pointer; white-space:nowrap; transition:color .2s var(--ease); }
+  .seg .seg-btn:hover{ color:var(--text); }
+  .seg .seg-btn.on{ background:transparent; color:var(--red); }
+  .seg .seg-btn:active{ transform:scale(.94); transition:transform .1s ease; }
+  /* 内容区切换动效：淡入 + 轻微上移 */
+  #customMsgWrap, #aiConfigWrap{ animation:aiSwapIn .34s var(--ease); }
+  @keyframes aiSwapIn{ from{ opacity:0; transform:translateY(6px); } to{ opacity:1; transform:none; } }
+  @media (prefers-reduced-motion: reduce){ #customMsgWrap, #aiConfigWrap{ animation:none; } .seg .seg-thumb{ transition:none; } }
+  .ai-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px 14px; margin-top:12px; }
+  .ai-grid .ai-full{ grid-column:1 / -1; }
+  .ai-grid label{ display:block; font-size:12px; color:var(--text-2); margin-bottom:6px; font-weight:500; }
+  .ai-grid .input{ width:100%; }
+  @media(max-width:640px){ .ai-grid{ grid-template-columns:1fr; } }
+
   /* 好友手动粘贴框（同步未启用时的主要入口） */
   .friend-paste{ margin-top:14px; }
   .friend-paste label{ display:block; font-size:12.5px; color:var(--text-2); margin-bottom:7px; font-weight:500; }
@@ -123,10 +140,67 @@
   /* 运行日志面板：关闭 3D 上下文，确保内部滚动正常 */
   #sec-logs{ transform-style:flat; }
   #sec-logs .logs{ overflow-y:auto; overscroll-behavior:contain; }
+  /* >>> DF-LOG-COLOR-START */
+  #sec-logs .logs{
+    background:#0b0b0f;
+    border:1px solid rgba(255,255,255,.07);
+    border-radius:10px;
+    color:#b8bcc6;
+    padding:14px 16px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+    font-size:12.5px;
+    line-height:1.75;
+    white-space:pre-wrap;
+    word-break:break-all;
+  }
+  #sec-logs .logs .log-line{ margin:0; }
+  #sec-logs .logs .log-time{ color:#6b7280; margin-right:8px; }
+  #sec-logs .logs .log-info{ color:#5b9dff; }
+  #sec-logs .logs .log-error{ color:#ff4d4f; }
+  #sec-logs .logs .log-warn{ color:#f0a020; }
+  #sec-logs .logs .log-line .lvl{ font-weight:600; font-size:11px; margin-right:6px; padding:1px 5px; border-radius:4px; background:rgba(255,255,255,.05); }
+  #sec-logs .logs .log-line .log-text{ color:var(--text-2); }
+  .live-dot{ display:inline-block; width:8px; height:8px; border-radius:50%; background:#6b7280; margin-left:8px; vertical-align:middle; }
+  .live-dot.on{ background:#22c55e; box-shadow:0 0 0 3px rgba(34,197,94,.18); animation:livedot 1.6s infinite; }
+  .live-dot.off{ background:#ef4444; box-shadow:0 0 0 3px rgba(239,68,68,.18); }
+  @keyframes livedot{ 0%{opacity:1} 50%{opacity:.35} 100%{opacity:1} }
+  #sec-logs .logs .log-new{ background:rgba(254,44,85,.12); border-radius:6px; }
+  /* <<< DF-LOG-COLOR-END */
   @media(prefers-reduced-motion:reduce){
     #scrollProgress,.panel::after{ animation:none !important; }
     .panel-head h2{ animation:none !important; }
   }
+  /* 控制台概览卡片 */
+  .dash-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
+  @media(max-width:560px){ .dash-grid{ grid-template-columns:1fr; } }
+  .stat-card{ position:relative; display:flex; align-items:center; gap:14px; padding:16px 44px 16px 18px; background:var(--surface-2); border:1px solid var(--hairline); border-radius:var(--radius); cursor:pointer; transition:border-color .18s var(--ease), transform .14s var(--ease-spring), background .18s; overflow:hidden; }
+  .stat-card:hover{ border-color:var(--accent-line); transform:translateY(-2px); background:var(--surface-3); }
+  .stat-card .sc-ico{ flex:0 0 auto; width:44px; height:44px; border-radius:12px; display:grid; place-items:center; background:var(--accent-soft); color:var(--accent-2); }
+  .stat-card .sc-body{ flex:1 1 auto; min-width:0; }
+  .stat-card .sc-val{ font-size:25px; font-weight:700; line-height:1.05; color:var(--text); }
+  .stat-card .sc-val .u{ font-size:13px; font-weight:600; color:var(--text-3); margin-left:5px; }
+  .stat-card .sc-label{ font-size:12.5px; color:var(--text-2); margin-top:3px; }
+  .stat-card .sc-go{ position:absolute; right:14px; top:50%; transform:translateY(-50%); color:var(--text-3); font-size:20px; transition:opacity .18s var(--ease), transform .18s var(--ease); }
+  .stat-card:hover .sc-go{ opacity:1; transform:translateY(-50%) translateX(3px); }
+  .stat-wide{ position:relative; display:flex; align-items:center; gap:14px; margin-top:12px; padding:15px 44px 15px 18px; background:var(--surface-2); border:1px solid var(--hairline); border-radius:var(--radius); cursor:pointer; transition:border-color .18s var(--ease), transform .14s var(--ease-spring), background .18s; }
+  .stat-wide:hover{ border-color:var(--accent-line); transform:translateY(-2px); background:var(--surface-3); }
+  .stat-wide .sw-ico{ flex:0 0 auto; width:44px; height:44px; border-radius:12px; display:grid; place-items:center; background:var(--accent-soft); color:var(--accent-2); }
+  .stat-wide .sw-body{ flex:1 1 auto; min-width:0; }
+  .stat-wide .sw-label{ font-size:12.5px; color:var(--text-2); }
+  .stat-wide .sw-val{ font-size:18px; font-weight:700; color:var(--text); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .stat-wide .sw-go{ position:absolute; right:16px; top:50%; transform:translateY(-50%); color:var(--text-3); font-size:22px; }
+  /* 圆形仪表盘（数字环）：今日已续火花 / 火花好友总数 / 目前火花最高天数 */
+  .stat-card.gauge-card{ gap:16px; }
+  .sc-meta{ flex:1 1 auto; min-width:0; }
+  .sc-sub{ font-size:12px; color:var(--text-3); margin-top:3px; }
+  .sw-meta{ flex:1 1 auto; min-width:0; }
+  .gauge-wrap{ position:relative; flex:0 0 auto; width:70px; height:70px; }
+  .gauge-wrap.lg{ width:92px; height:92px; }
+  .gauge{ width:100%; height:100%; transform:rotate(-90deg); display:block; }
+  .gauge .g-track{ fill:none; stroke:var(--hairline); stroke-width:9; }
+  .gauge .g-prog{ fill:none; stroke:var(--accent-2); stroke-width:9; stroke-linecap:round; stroke-dasharray:326.726; stroke-dashoffset:326.726; transition:stroke-dashoffset 1s var(--ease-spring); }
+  .gauge-num{ position:absolute; inset:0; display:grid; place-items:center; font-size:19px; font-weight:700; color:var(--text); line-height:1; }
+  .gauge-wrap.lg .gauge-num{ font-size:25px; }
 </style>
 </head>
 <body class="app">
@@ -205,6 +279,49 @@
   </header>
 
   <div class="content">
+    <!-- 控制台概览 -->
+    <section class="panel mb-3" id="sec-home">
+      <div class="panel-head"><div class="ico-badge accent"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-chart"/></svg></div><h2>概览</h2><span class="spacer"></span><span class="tag" id="dashUpdated">实时</span></div>
+      <div class="panel-body">
+        <div class="dash-grid">
+          <div class="stat-card gauge-card" data-nav="logs">
+            <div class="gauge-wrap">
+              <svg class="gauge" viewBox="0 0 120 120" aria-hidden="true"><circle class="g-track" cx="60" cy="60" r="52"/><circle class="g-prog" cx="60" cy="60" r="52"/></svg>
+              <div class="gauge-num" id="gaugeRenewed">0</div>
+            </div>
+            <div class="sc-meta"><div class="sc-label">今日已续火花</div><div class="sc-sub" id="subRenewed">共 0 位好友</div></div>
+            <div class="sc-go">&rsaquo;</div>
+          </div>
+          <div class="stat-card gauge-card" data-nav="friends">
+            <div class="gauge-wrap">
+              <svg class="gauge" viewBox="0 0 120 120" aria-hidden="true"><circle class="g-track" cx="60" cy="60" r="52"/><circle class="g-prog" cx="60" cy="60" r="52"/></svg>
+              <div class="gauge-num" id="gaugeFriends">0</div>
+            </div>
+            <div class="sc-meta"><div class="sc-label">火花好友总数</div><div class="sc-sub" id="subFriends">已配置续火花</div></div>
+            <div class="sc-go">&rsaquo;</div>
+          </div>
+          <div class="stat-card" data-nav="schedule">
+            <div class="sc-ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-clock"/></svg></div>
+            <div class="sc-body"><div class="sc-val"><span id="statSchedule">未开启</span></div><div class="sc-label">每日定时任务</div></div>
+            <div class="sc-go">&rsaquo;</div>
+          </div>
+          <div class="stat-card" data-nav="account">
+            <div class="sc-ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-card"/></svg></div>
+            <div class="sc-body"><div class="sc-val"><span id="statVip">永久</span></div><div class="sc-label">会员有效期</div></div>
+            <div class="sc-go">&rsaquo;</div>
+          </div>
+        </div>
+        <div class="stat-wide gauge-wide" data-nav="friends">
+          <div class="gauge-wrap lg">
+            <svg class="gauge" viewBox="0 0 120 120" aria-hidden="true"><circle class="g-track" cx="60" cy="60" r="52"/><circle class="g-prog" cx="60" cy="60" r="52"/></svg>
+            <div class="gauge-num" id="gaugeTopSpark">--</div>
+          </div>
+          <div class="sw-meta"><div class="sw-label">目前火花最高天数</div><div class="sw-val" id="statTopSpark">暂无数据</div></div>
+          <div class="sw-go">&rsaquo;</div>
+        </div>
+      </div>
+    </section>
+
     <!-- 账号与登录 -->
     <section class="panel mb-3" id="sec-account">
       <div class="panel-head">
@@ -267,10 +384,45 @@
     <section class="panel mb-3" id="sec-msg">
       <div class="panel-head"><div class="ico-badge"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-mail"/></svg></div><h2>发送内容</h2><span class="spacer"></span><button class="btn sm ghost" id="addMsgBtn" onclick="addMsgBox()">＋ 添加文案</button></div>
       <div class="panel-body">
-        <div id="messagesWrap">
-          <div class="msg-item"><span class="msg-idx">1</span><textarea class="msg-input input" rows="3" placeholder="例如：续火花"></textarea><button class="msg-del" type="button" title="删除这条文案" aria-label="删除这条文案" onclick="removeMsgBox(this)"><svg viewBox="0 0 24 24" width="14" height="14"><use href="#i-trash"/></svg></button></div>
+        <div class="row gap-2 wrap" style="margin-bottom:12px;">
+          <span class="muted" style="font-size:12.5px; align-self:center;">内容来源：</span>
+          <div class="seg" id="contentModeSeg">
+            <div class="seg-thumb" id="contentModeThumb"></div>
+            <button type="button" class="seg-btn on" data-mode="custom" onclick="setContentMode('custom')">自定义内容</button>
+            <button type="button" class="seg-btn" data-mode="ai" onclick="setContentMode('ai')">AI 内容</button>
+          </div>
+          <span class="muted" id="contentModeHint" style="font-size:12px; align-self:center;"></span>
         </div>
-        <p class="hint">可添加最多 5 条不同文案，发送时每个好友随机选用其中一条。</p>
+        <div id="customMsgWrap">
+          <div id="messagesWrap">
+            <div class="msg-item"><span class="msg-idx">1</span><textarea class="msg-input input" rows="3" placeholder="例如：续火花"></textarea><button class="msg-del" type="button" title="删除这条文案" aria-label="删除这条文案" onclick="removeMsgBox(this)"><svg viewBox="0 0 24 24" width="14" height="14"><use href="#i-trash"/></svg></button></div>
+          </div>
+          <p class="hint">可添加最多 5 条不同文案，发送时每个好友随机选用其中一条。</p>
+        </div>
+        <div id="aiConfigWrap" style="display:none;">
+          <div class="ai-grid">
+            <div class="ai-full">
+              <label for="aiPreset">接口预设（选一个自动填入地址与模型，可再手动改）</label>
+              <select id="aiPreset" class="input" onchange="applyAiPreset()">
+                <option value="">自定义</option>
+                <option value="zhipu">智谱 GLM（免费 glm-4-flash）</option>
+                <option value="siliconflow">硅基流动（免费 Qwen3-8B）</option>
+                <option value="openrouter">OpenRouter（:free 免费模型）</option>
+                <option value="groq">Groq（免费 Llama）</option>
+              </select>
+            </div>
+            <div><label for="aiBaseUrl">API 接口地址（OpenAI 兼容）</label><input id="aiBaseUrl" class="input" placeholder="https://api.openai.com/v1"></div>
+            <div><label for="aiApiKey">API Key</label><input id="aiApiKey" class="input" type="password" placeholder="sk-..." autocomplete="off"></div>
+            <div><label for="aiModel">模型</label><input id="aiModel" class="input" placeholder="gpt-4o-mini / deepseek-chat"></div>
+            <div><label for="aiMaxTokens">最大输出 Tokens（思考型模型请调大，如 512）</label><input id="aiMaxTokens" class="input" type="number" min="16" max="2000" step="16" value="256"></div>
+            <div class="ai-full"><label for="aiPrompt">生成要求（Prompt）</label><textarea id="aiPrompt" class="input" rows="3" placeholder="例如：用一句话给抖音好友发续火花的问候，10-20字，口语化自然，不要引号和前缀"></textarea></div>
+            <div class="ai-full" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+              <button class="btn sm ghost" onclick="testAi()">测试生成</button>
+              <span class="muted" id="aiTestResult" style="font-size:12px;"></span>
+            </div>
+          </div>
+          <p class="hint">AI 内容模式下，每次发送前为每个好友实时生成一条不同文案；生成失败自动回退到自定义文案。</p>
+        </div>
       </div>
     </section>
 
@@ -311,7 +463,7 @@
 
     <!-- 运行日志 -->
     <section class="panel mb-3" id="sec-logs">
-      <div class="panel-head"><div class="ico-badge"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-doc"/></svg></div><h2>运行日志</h2><span class="spacer"></span><span class="run-badge idle" id="runStatusBadge">空闲中</span><button class="btn sm ghost" onclick="refreshLogs(true)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-refresh"/></svg>刷新</button></div>
+      <div class="panel-head"><div class="ico-badge"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-doc"/></svg></div><h2>运行日志</h2><span class="spacer"></span><span class="run-badge idle" id="runStatusBadge">空闲中</span><span class="live-dot off" id="logLiveDot" title="实时日志连接状态"></span><button class="btn sm ghost" onclick="refreshLogs(true)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-refresh"/></svg>刷新</button></div>
       <div class="panel-body">
         <div class="logs" id="logsContainer">暂无日志</div>
       </div>
@@ -382,6 +534,7 @@ async function checkState(showToastOnDone = false, reloadConfig = false) {
     currentState = state;
     if (reloadConfig) _configLoaded = false;
     updateUI(state);
+    loadStats();
     if (showToastOnDone) showToast("状态已刷新");
   } catch (err) { showMessage("error", "获取状态失败: " + err.message); }
 }
@@ -472,6 +625,14 @@ function updateUI(state) {
     const msgs = state.config.messages || [];
     const vals = msgs.map(m => (m && m.value) ? m.value : "").filter(Boolean);
     renderMessages(vals);
+    const ai = state.config.ai || {};
+    document.getElementById("aiBaseUrl").value = ai.base_url || "";
+    document.getElementById("aiApiKey").value = ai.api_key || "";
+    document.getElementById("aiModel").value = ai.model || "";
+    document.getElementById("aiPrompt").value = ai.prompt || "";
+    if (ai.max_tokens) document.getElementById("aiMaxTokens").value = ai.max_tokens;
+    document.getElementById("aiPreset").value = matchAiPreset(ai.base_url);
+    setContentMode(state.config.content_mode === "ai" ? "ai" : "custom");
     _configLoaded = true;
   }
 
@@ -504,38 +665,63 @@ function updateUI(state) {
   }
 }
 
-/* 日志增量渲染：只追加新增行，不整段重绘（避免所有行重复播放入场动画导致割裂） */
-let _renderedLogLines = 0;
-function renderLogs(logs) {
+/* ===== 实时运行日志（SSE） ===== */
+let _logSource = null;
+let _logStick = true;          // 是否自动贴底（用户上滑查看历史时暂停贴底）
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function parseLogLine(line){
+  // 时间戳：兼容 "2026-08-25 04:32:13" 与带毫秒 "2026-08-25 04:32:13,316" 两种格式
+  const tm = line.match(/^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})(?:,\d+)?/);
+  const time = tm ? tm[1] : "";
+  let raw = tm ? line.slice(tm[0].length).trim() : line.trim();
+  raw = raw.replace(/^[,\s]*\d+\s*/, "");  // 去掉毫秒前缀 "316 " / ",316"
+  let level = "INFO";
+  const m = raw.match(/^(INFO|WARN|WARNING|ERROR|DEBUG)\b\s*/i);
+  if (m) level = m[1].toUpperCase();
+  const rest = m ? raw.slice(m[0].length) : raw;
+  return { time, level, rest };
+}
+function levelClass(level){
+  const L = (level||"INFO").toUpperCase();
+  if (L === "ERROR") return "log-error";
+  if (L === "WARN" || L === "WARNING") return "log-warn";
+  return "log-info";
+}
+function appendLogLine(line){
   const container = document.getElementById("logsContainer");
-  if (!container || !logs || logs.length === 0) return;
-  // 服务端日志轮转/清空导致返回行数比已渲染的少 → 重置后全量渲染
-  if (logs.length < _renderedLogLines) _renderedLogLines = 0;
-  // 首屏：清掉 "暂无日志" 占位文本
-  if (_renderedLogLines === 0) container.innerHTML = "";
-  const fresh = logs.slice(_renderedLogLines);
-  if (!fresh.length) return;
-  const frag = document.createDocumentFragment();
-  fresh.forEach(line => {
-    const timeMatch = line.match(/^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/);
-    const time = timeMatch ? timeMatch[1] : "";
-    const raw = timeMatch ? line.substring(time.length).trim() : line;
-    const rest = raw.replace(/^(INFO|WARNING|ERROR)\s+/i, "");
-    let cls = "log-info"; let tag = "520 love";
-    if (raw.includes("执行结束")) { cls = "log-error"; tag = "521 love"; }
-    else if (raw.includes("ERROR") || raw.includes("失败") || raw.toLowerCase().includes("error") || raw.includes("Traceback") || raw.includes("异常") || raw.includes("失效")) { cls = "log-error"; tag = "250 sb"; }
-    const div = document.createElement("div");
-    div.className = "log-line";
-    div.innerHTML = `<span class="log-time">${time}</span> <span class="${cls}">[${tag}] ${rest}</span>`;
-    frag.appendChild(div);
-  });
-  container.appendChild(frag);
-  _renderedLogLines = logs.length;
+  if (!container) return;
+  if (container.innerHTML.trim() === "暂无日志") container.innerHTML = "";
+  const { time, level, rest } = parseLogLine(line);
+  const div = document.createElement("div");
+  div.className = "log-line";
+  div.innerHTML = `<span class="log-time">${time}</span><span class="lvl ${levelClass(level)}">${level}</span><span class="log-text">${escapeHtml(rest)}</span>`;
+  container.appendChild(div);
+  // 清除旧高亮，仅高亮最新一行
+  const lines = container.querySelectorAll(".log-line");
+  lines.forEach(l => l.classList.remove("log-new"));
+  div.classList.add("log-new");
+  // 仅当用户已在底部（或开启贴底）时才自动滚动，避免打断上滑查看
+  const nearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 48;
+  if (_logStick || nearBottom) container.scrollTop = container.scrollHeight;
+}
+function renderFullLogs(logs){
+  const container = document.getElementById("logsContainer");
+  if (!container) return;
+  container.innerHTML = "";
+  (logs||[]).forEach(appendLogLine);
   container.scrollTop = container.scrollHeight;
-  // 只给最新一行加高亮（清除旧高亮）
-  const _lines = container.querySelectorAll(".log-line");
-  _lines.forEach(l => l.classList.remove("log-new"));
-  if (_lines.length) _lines[_lines.length - 1].classList.add("log-new");
+}
+function connectLogStream(){
+  if (_logSource) return;
+  const dot = document.getElementById("logLiveDot");
+  try { _logSource = new EventSource("/api/logs/stream"); } catch(e){ return; }
+  _logSource.addEventListener("history", e => {
+    try { renderFullLogs(JSON.parse(e.data)); } catch(_){}
+    if (dot) dot.className = "live-dot on";
+  });
+  _logSource.addEventListener("log", e => { appendLogLine(e.data); if (dot) dot.className = "live-dot on"; });
+  _logSource.onopen = () => { if (dot) dot.className = "live-dot on"; };
+  _logSource.onerror = () => { if (dot) dot.className = "live-dot off"; /* EventSource 会自动重连 */ };
 }
 
 function showMessage(type, text) {
@@ -691,14 +877,94 @@ async function syncFriends(){
 
 async function saveConfig() {
   const friends = document.getElementById("friendsInput").value.split("\n").map(s => s.trim()).filter(s => s);
-  const messages = collectMessages();
+  const mode = (typeof _contentMode === "string") ? _contentMode : "custom";
   if (friends.length === 0) { showMessage("error", "请至少选择一个好友"); return; }
-  if (messages.length === 0) { showMessage("error", "请填写发送内容"); return; }
-  const config = { friends: friends, messages: messages.map(value => ({ type: "text", value })), send_interval_seconds: { min: 3, max: 8 }, prevent_duplicates: false, target_open_retries: 5, target_open_timeout_seconds: 15 };
+  if (mode === "custom" && collectMessages().length === 0) { showMessage("error", "请填写发送内容"); return; }
+  const config = { friends: friends, messages: collectMessages().map(value => ({ type: "text", value })), send_interval_seconds: { min: 3, max: 8 }, prevent_duplicates: false, target_open_retries: 5, target_open_timeout_seconds: 15, content_mode: mode, ai: collectAiConfig() };
   try {
     await fetchJSON("/api/config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(config) });
     checkState(); showModal(true, "配置已保存", "好友列表与发送内容已更新");
   } catch (err) { showMessage("error", "保存失败: " + err.message); }
+}
+
+/* ===== 发送内容来源：自定义 / AI ===== */
+let _contentMode = "custom";
+function setContentMode(mode) {
+  _contentMode = (mode === "ai") ? "ai" : "custom";
+  document.querySelectorAll("#contentModeSeg .seg-btn").forEach(b => b.classList.toggle("on", b.dataset.mode === _contentMode));
+  const thumb = document.getElementById("contentModeThumb");
+  if (thumb) moveContentThumb();
+  const customWrap = document.getElementById("customMsgWrap");
+  const aiWrap = document.getElementById("aiConfigWrap");
+  // 目标区块重新显示时重触发淡入动画：先隐藏再强制 reflow 后显示
+  const showWrap = (el, show) => {
+    if (!el) return;
+    if (show) {
+      el.style.display = "";
+      el.style.animation = "none";
+      void el.offsetWidth;
+      el.style.animation = "";
+    } else {
+      el.style.display = "none";
+    }
+  };
+  showWrap(customWrap, _contentMode === "custom");
+  showWrap(aiWrap, _contentMode === "ai");
+  const addBtn = document.getElementById("addMsgBtn");
+  if (addBtn) addBtn.style.display = (_contentMode === "custom") ? "" : "none";
+  const hint = document.getElementById("contentModeHint");
+  if (hint) hint.textContent = (_contentMode === "ai") ? "每次发送前由 AI 生成不同文案" : "从下方自定义文案中随机选用";
+}
+function moveContentThumb() {
+  const seg = document.getElementById("contentModeSeg");
+  const thumb = document.getElementById("contentModeThumb");
+  if (!seg || !thumb) return;
+  const btn = seg.querySelector(".seg-btn.on");
+  if (!btn) return;
+  thumb.style.left = btn.offsetLeft + "px";
+  thumb.style.width = btn.offsetWidth + "px";
+}
+moveContentThumb();
+function collectAiConfig() {
+  return {
+    base_url: document.getElementById("aiBaseUrl").value.trim(),
+    api_key: document.getElementById("aiApiKey").value.trim(),
+    model: document.getElementById("aiModel").value.trim(),
+    prompt: document.getElementById("aiPrompt").value.trim(),
+    max_tokens: parseInt(document.getElementById("aiMaxTokens").value) || 256
+  };
+}
+const AI_PRESETS = {
+  zhipu: { base_url: "https://open.bigmodel.cn/api/paas/v4", model: "glm-4-flash" },
+  siliconflow: { base_url: "https://api.siliconflow.cn/v1", model: "Qwen/Qwen3-8B" },
+  openrouter: { base_url: "https://openrouter.ai/api/v1", model: "meta-llama/llama-3.3-70b-instruct:free" },
+  groq: { base_url: "https://api.groq.com/openai/v1", model: "llama-3.3-70b-versatile" }
+};
+function applyAiPreset() {
+  const p = AI_PRESETS[document.getElementById("aiPreset").value];
+  if (p) { document.getElementById("aiBaseUrl").value = p.base_url; document.getElementById("aiModel").value = p.model; }
+}
+function matchAiPreset(baseUrl) {
+  const b = (baseUrl || "").replace(/\/+$/, "");
+  for (const k in AI_PRESETS) { if (AI_PRESETS[k].base_url.replace(/\/+$/, "") === b) return k; }
+  return "";
+}
+async function testAi() {
+  const res = document.getElementById("aiTestResult");
+  const btn = (event && event.target && event.target.disabled !== undefined) ? event.target : null;
+  if (btn) btn.disabled = true;
+  if (res) { res.textContent = "生成中…"; res.style.color = "var(--text-3)"; }
+  try {
+    const d = await fetchJSON("/api/ai-test", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ai: collectAiConfig() }) });
+    if (res) {
+      if (d && d.ok) { res.textContent = "✓ " + (d.text || ""); res.style.color = "#3ddc84"; }
+      else { res.textContent = "✗ " + ((d && d.error) || "生成失败"); res.style.color = "#ff4d4f"; }
+    }
+  } catch (err) {
+    if (res) { res.textContent = "✗ " + err.message; res.style.color = "#ff4d4f"; }
+  } finally {
+    if (btn) btn.disabled = false;
+  }
 }
 
 async function doRun(dryRun) {
@@ -707,15 +973,16 @@ async function doRun(dryRun) {
   if (!dryRun && !confirm(`确认要${action}吗？这将向 ${sel} 位已选好友发送消息。`)) return;
   try {
     await fetchJSON("/api/run", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ dry_run: dryRun }) });
-    setTimeout(() => { checkState(); refreshLogs(); }, 1000);
-    const interval = setInterval(() => { checkState(); refreshLogs(); if (currentState.run_status !== "running") clearInterval(interval); }, 2000);
+    connectLogStream();  // 运行期间确保实时日志连接已建立
+    setTimeout(() => { checkState(); }, 1000);
+    const interval = setInterval(() => { checkState(); if (currentState.run_status !== "running") clearInterval(interval); }, 2000);
   } catch (err) { showMessage("error", `启动${action}失败: ` + err.message); }
 }
 
 async function refreshLogs(showToastOnDone = false) {
   try {
     const data = await fetchJSON("/api/logs");
-    if (data.logs && data.logs.length > 0) renderLogs(data.logs);
+    if (data.logs && data.logs.length > 0) renderFullLogs(data.logs);  // 手动刷新回退：全量重渲
     if (showToastOnDone) showToast("日志已刷新");
   } catch (err) { console.error("加载日志失败:", err); }
 }
@@ -756,6 +1023,51 @@ function setTime(val){
 }
 
 /* 侧边栏导航高亮 + 平滑滚动到区块 */
+// 控制台概览卡片数据
+function setGauge(numId, percent, valueText){
+  const numEl = document.getElementById(numId);
+  if (numEl) numEl.textContent = valueText;
+  const wrap = numEl ? numEl.closest(".gauge-wrap") : null;
+  if (wrap){
+    const prog = wrap.querySelector(".g-prog");
+    if (prog){
+      const C = 326.726; // 2πr, r=52
+      const p = Math.max(0, Math.min(1, percent || 0));
+      prog.style.strokeDashoffset = (C * (1 - p)).toFixed(2);
+    }
+  }
+}
+async function loadStats(){
+  try {
+    const d = await fetchJSON("/api/stats");
+    if (!d) return;
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    const renewed = (d.renewed_today != null ? d.renewed_today : 0);
+    const total = (d.total_friends != null ? d.total_friends : 0);
+    // ① 今日已续火花：环=今日续/总好友
+    setGauge("gaugeRenewed", total ? renewed / total : 0, String(renewed));
+    set("subRenewed", "共 " + total + " 位好友");
+    // ② 火花好友总数：环=总数/50（封顶满环）
+    setGauge("gaugeFriends", total ? Math.min(1, total / 50) : 0, String(total));
+    set("subFriends", "已配置续火花");
+    // ③ 定时任务（文字）
+    if (d.schedule && d.schedule.enabled) { set("statSchedule", d.schedule.time || "已开启"); }
+    else { set("statSchedule", "未开启"); }
+    // ④ 会员有效期（文字）
+    if (d.membership && d.membership.permanent) { set("statVip", "永久"); }
+    else if (d.membership && d.membership.days != null) { set("statVip", d.membership.days + " 天"); }
+    else { set("statVip", "未开通"); }
+    // ⑤ 目前火花最高天数：环=天数/365（封顶满环）
+    if (d.top_spark && d.top_spark.name) {
+      setGauge("gaugeTopSpark", Math.min(1, (d.top_spark.days || 0) / 365), String(d.top_spark.days || 0));
+      set("statTopSpark", d.top_spark.name);
+    } else {
+      setGauge("gaugeTopSpark", 0, "--");
+      set("statTopSpark", "暂无数据");
+    }
+  } catch (e) {}
+}
+
 document.querySelectorAll(".nav-item[data-nav]").forEach(function(a){
   a.addEventListener("click", function(e){
     e.preventDefault();
@@ -764,12 +1076,26 @@ document.querySelectorAll(".nav-item[data-nav]").forEach(function(a){
     document.querySelectorAll(".nav-item").forEach(n=>n.classList.remove("active"));
     a.classList.add("active");
     if(t) t.scrollIntoView({behavior:"smooth", block:"start"});
-    if (id === "sec-logs") refreshLogs();  // 切到「运行日志」面板时立即拉取一次
   });
 });
 
+  // 控制台概览卡片：点击跳转到对应面板
+  document.querySelectorAll(".stat-card[data-nav], .stat-wide[data-nav]").forEach(function(el){
+    el.addEventListener("click", function(){
+      const nav = el.getAttribute("data-nav");
+      const navEl = document.querySelector('.nav-item[data-nav="'+nav+'"]');
+      if (navEl) { navEl.click(); }
+      else { const t = document.getElementById("sec-"+nav); if (t) t.scrollIntoView({behavior:"smooth", block:"start"}); }
+    });
+  });
+
 buildTimePicker();
-setTimeout(() => { checkState(); refreshLogs(); setInterval(() => { checkState(); refreshLogs(); }, 5000); }, 10000);
+connectLogStream();  // 建立实时日志 SSE 连接（无需手动刷新）
+(function(){
+  const c = document.getElementById("logsContainer");
+  if (c) c.addEventListener("scroll", () => { _logStick = (c.scrollHeight - c.scrollTop - c.clientHeight) < 48; });
+})();
+setTimeout(() => { checkState(); setInterval(() => { checkState(); }, 5000); }, 10000);
 </script>
 
 <script>

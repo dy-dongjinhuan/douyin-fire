@@ -1,0 +1,23 @@
+# Python
+venv/
+.venv/
+__pycache__/
+*.pyc
+
+# 运行时数据 / 密钥（切勿提交）
+artifacts/
+data/*.json
+*.log
+.env
+config.json
+gui.log
+server.log
+
+# 备份 / 临时
+*.bak*
+.bak_*/
+webui.bak_*/
+
+# 系统
+.DS_Store
+Thumbs.db

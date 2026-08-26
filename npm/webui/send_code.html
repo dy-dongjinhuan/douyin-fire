@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>验证码发送工具</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #000000;
+    color: #f0f0f0;
+    font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .card {
+    width: 100%;
+    max-width: 420px;
+    background: rgba(20, 20, 24, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 28px 26px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  }
+  h1 { font-size: 19px; margin-bottom: 4px; }
+  .sub { font-size: 13px; color: #8a8a8a; margin-bottom: 22px; }
+  .field { margin-bottom: 16px; }
+  label { display: block; font-size: 13px; color: #bdbdbd; margin-bottom: 7px; }
+  input {
+    width: 100%;
+    padding: 12px 14px;
+    background: #14141a;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    color: #fff;
+    font-size: 15px;
+    outline: none;
+    transition: border-color .2s;
+  }
+  input:focus { border-color: #6c5ce7; }
+  .field-row { display: flex; gap: 10px; }
+  .field-row input { flex: 1; }
+  button {
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    cursor: pointer;
+    transition: opacity .2s, transform .05s;
+    white-space: nowrap;
+  }
+  button:active { transform: scale(.98); }
+  .btn-primary {
+    width: 100%;
+    padding: 13px;
+    background: #6c5ce7;
+    color: #fff;
+    font-weight: 600;
+    margin-top: 4px;
+  }
+  .btn-primary:hover { opacity: .92; }
+  .btn-ghost {
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+  }
+  .btn-ghost:disabled { opacity: .45; cursor: not-allowed; }
+  .msg {
+    margin-top: 16px;
+    padding: 11px 13px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    line-height: 1.5;
+    display: none;
+  }
+  .msg.show { display: block; }
+  .msg.success { background: rgba(0, 200, 120, 0.12); color: #4be39a; border: 1px solid rgba(0, 200, 120, 0.3); }
+  .msg.error { background: rgba(255, 70, 70, 0.12); color: #ff6b6b; border: 1px solid rgba(255, 70, 70, 0.3); }
+  .divider { height: 1px; background: rgba(255,255,255,.08); margin: 24px 0 20px; }
+  .hint { font-size: 12px; color: #6f6f6f; margin-top: 14px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>验证码发送工具</h1>
+  <p class="sub">向任意邮箱发送注册验证码，并可就地校验是否生效</p>
+
+  <div class="field">
+    <label>收件邮箱</label>
+    <input type="email" id="email" placeholder="例如 user@example.com" autocomplete="email">
+  </div>
+  <button class="btn-primary" id="sendBtn" onclick="sendCode()">发送验证码</button>
+
+  <div class="divider"></div>
+
+  <div class="field">
+    <label>校验验证码（可选）</label>
+    <div class="field-row">
+      <input type="text" id="code" placeholder="6 位验证码" maxlength="6">
+      <button class="btn-ghost" id="verifyBtn" onclick="verifyCode()">校验</button>
+    </div>
+  </div>
+
+  <div class="msg" id="msg"></div>
+  <p class="hint">验证码将发往邮箱，请到收件箱（含垃圾邮件）查收</p>
+</div>
+
+<script>
+function showMsg(type, text) {
+  const el = document.getElementById("msg");
+  el.className = "msg show " + type;
+  el.textContent = text;
+}
+
+async function sendCode() {
+  const email = document.getElementById("email").value.trim();
+  const btn = document.getElementById("sendBtn");
+  if (!email || !email.includes("@")) { showMsg("error", "请填写有效的邮箱地址"); return; }
+  btn.disabled = true;
+  btn.textContent = "发送中…";
+  try {
+    const resp = await fetch("/api/auth/send-email-code", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email, kind: "register" })
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (resp.ok && data.ok) {
+      showMsg("success", data.message || "验证码已发送，请查收邮箱");
+      let s = 60;
+      btn.textContent = s + "s 后重发";
+      const t = setInterval(() => {
+        s--;
+        if (s <= 0) { clearInterval(t); btn.textContent = "发送验证码"; btn.disabled = false; }
+        else btn.textContent = s + "s 后重发";
+      }, 1000);
+    } else {
+      showMsg("error", data.error || "发送失败");
+      btn.disabled = false;
+      btn.textContent = "发送验证码";
+    }
+  } catch (err) {
+    showMsg("error", "网络错误: " + err.message);
+    btn.disabled = false;
+    btn.textContent = "发送验证码";
+  }
+}
+
+async function verifyCode() {
+  const email = document.getElementById("email").value.trim();
+  const code = document.getElementById("code").value.trim();
+  if (!email || !code) { showMsg("error", "请先填写邮箱和验证码"); return; }
+  const btn = document.getElementById("verifyBtn");
+  btn.disabled = true;
+  try {
+    const resp = await fetch("/api/auth/verify-email-code", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email, code: code })
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (resp.ok && data.ok) {
+      showMsg("success", "✅ 验证码正确，链路正常");
+    } else {
+      showMsg("error", data.error || "验证码错误或已过期");
+    }
+  } catch (err) {
+    showMsg("error", "网络错误: " + err.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>

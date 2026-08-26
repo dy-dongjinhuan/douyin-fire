@@ -1,53 +1,65 @@
-# 火花续连（本地版）
+# 抖音续火花管理面板 — Windows 本地一键部署版
 
-抖音「自动续火花」本地单机版。**免登录、免注册、永久会员**，下载解压即可使用。
+在**你自己的 Windows 电脑**上双击一条龙部署，装好后浏览器自动打开可视化后台，开箱即用。
 
-## 快速开始
+## 使用步骤（3 步）
 
-### Windows
-1. 双击 `install.bat`（自动检测 Python → 建 venv → 装依赖 → 装浏览器）
-2. 双击 `start.bat` 启动
-3. 浏览器打开 http://localhost:8765
+### 1. 准备：装 Python（只需一次）
+- 到 https://www.python.org/downloads/ 下载 **Python 3.11 或更高版本**（64 位）
+- 安装时**务必勾选** `Add Python to PATH`
+- 验证：打开命令提示符（Win+R → 输入 `cmd`）执行 `python --version`，能显示版本号即可
 
-### Linux / macOS
-```bash
-./install.sh
-./start.sh
-```
+### 2. 一键部署
+- 解压本压缩包到任意目录（如 `D:\douyin-fire`）
+- **双击 `install.bat`**
+- 首次会自动：建虚拟环境 → 装依赖 → 下载 Chromium 浏览器（约 150MB，耐心等几分钟）→ 启动服务 → 自动打开浏览器
 
-> 需要 Python 3.10+。首次运行需执行安装脚本，之后每次只需 `start.bat` / `./start.sh`。
+### 3. 开始使用
+- 浏览器打开 `http://127.0.0.1:8765/`（脚本会自动打开）
+- **免登录**：直接进入管理后台，无需账号密码（本地/独立部署版，`DEPLOY_MODE=local`）
+- **永久有效**：所有账号默认永久会员，不受到期限制
+- 到【个人中心】配置你的抖音登录态（粘贴 Cookie）后即可使用
 
-## 本地版特性
+## 日常使用
 
-- **无需登录**：打开即进入控制台，无登录页/注册页/后台页
-- **永久会员**：默认永久有效，无会员提示、无续费入口
-- 完整核心功能：好友列表（手动添加）、发送内容（最多 5 条文案）、定时续火花、干跑验证、正式发送、运行日志（增量刷新）
-- 抖音登录态：在控制台「账号与登录」上传 Cookie 后即可自动发送
-
-## 技术栈
-
-| 层 | 技术 |
+| 场景 | 操作 |
 |---|---|
-| 后端 | Python 3.10+，标准库 `http.server`（零框架依赖） |
-| 浏览器自动化 | Playwright + Chromium（`app/` 模块） |
-| 前端 | 原生 HTML/CSS/JavaScript + GSAP 3.12.5（本地自托管） |
-| 数据存储 | 本地 JSON 文件（`data/users/<用户>/`） |
-| 设计 | 深色 SaaS 风格，抖音红单一强调色 |
+| 启动服务 | 双击 `start.bat`（自动打开浏览器） |
+| 停止服务 | 双击 `stop.bat` |
+| 退出免登录模式 | 如需启用登录，编辑 `start.bat`，把 `set "DEPLOY_MODE=local"` 改为 `set "DEPLOY_MODE=server"` 即可恢复账号登录 |
 
-## 引用项目
-
-- [Playwright](https://github.com/microsoft/playwright)（MIT）— 浏览器自动化驱动
-- [GSAP](https://github.com/greensock/GSAP)（Standard License，免费版）— 前端动效
-- [python-dotenv](https://github.com/theskumar/python-dotenv)（BSD）— 环境变量
-- [tzdata](https://pypi.org/project/tzdata/)（Apache-2.0）— 时区数据
+> 服务启动后是一个独立的黑色窗口（DouyinFire），**别关它**，关了服务就停了。要停服务用 `stop.bat`。
 
 ## 常见问题
 
-**Q：启动后打不开？**
-确认 `start.bat`/`start.sh` 与 `gui.py` 在同一目录，且已先运行安装脚本。
+**Q1: 双击 install.bat 提示找不到 Python？**
+Python 没装或没勾选 Add to PATH。重装 Python，勾选后关掉窗口重新双击。
 
-**Q：发送失败？**
-确认已在「账号与登录」上传有效的抖音登录态 Cookie，并安装了 Playwright Chromium（安装脚本第 4 步）。
+**Q2: 下载 Chromium 很慢/失败？**
+第一次下载约 150MB，需要网络能访问 `cdn.playwright.dev`。网络慢就多等一会；失败重新双击 install.bat（已下载的部分会跳过）。也可以配置代理后重试。
 
-**Q：想部署成多人服务器版？**
-请使用本仓库的 `server/` 目录（服务器版），首个注册的账户即为管理员，无需邮箱验证。
+**Q3: 浏览器打开后提示"无法访问此网站"？**
+- 确认黑色服务窗口还在（DouyinFire 窗口没被关）
+- 确认访问的是 `http://127.0.0.1:8765/`（本地地址，不是 https）
+
+**Q4: 想用 80 端口（访问不用输端口号）？**
+编辑 `start.bat`，把 `GUI_PORT=8765` 改成 `GUI_PORT=80`，保存后重新双击。注意 80 端口需要管理员权限。
+
+**Q5: 电脑重启后服务没自动启动？**
+Windows 本地版默认不开机自启（避免后台偷偷跑）。要用就双击 `start.bat`。想开机自启：把 `start.bat` 的快捷方式放进 `启动` 文件夹（Win+R 输入 `shell:startup`）。
+
+**Q6: 抖音登录态失效/被风控？**
+- 登录态会过期，失效后到后台【个人中心】重新扫码登录
+- 自动化操作有被抖音安全验证的可能，建议小号测试、控制频率
+
+## 目录说明
+
+| 文件/目录 | 作用 |
+|---|---|
+| `install.bat` / `start.bat` / `stop.bat` | 安装 / 启动 / 停止 |
+| `config.json` | 好友、消息内容配置（部署时自动生成，也可后台改） |
+| `data/` | 运行时数据（用户、登录态、日志）——**定期备份，勿删** |
+| `app/` `webui/` | 程序代码，不用动 |
+
+## 免责声明
+本工具用于个人自动化需求。请遵守抖音平台规则及相关法律法规，因使用本工具产生的账号风控、封禁等风险由使用者自行承担。

@@ -1,25 +1,25 @@
-# Byte-compiled / cached
-__pycache__/
-*.py[cod]
-*$py.class
+# 依赖 / 构建
+node_modules/
+*.tgz
 
-# Virtual environments
+# Python
 venv/
 .venv/
-env/
-ENV/
+__pycache__/
+*.pyc
 
-# Python build artifacts
-*.egg-info/
-.eggs/
-build/
-dist/
+# 运行时数据 / 密钥
+artifacts/
+data/*.json
+*.log
+.env
+config.json
+gui.log
+server.log
 
-# OS / editor
+# 备份 / 临时
+*.bak*
+.bak_*/
+
 .DS_Store
 Thumbs.db
-.idea/
-.vscode/
-
-# Local runtime logs (optional)
-*.log

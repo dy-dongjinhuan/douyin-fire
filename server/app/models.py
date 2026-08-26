@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
 
@@ -43,6 +43,9 @@ class TaskConfig:
     prevent_duplicates: bool
     target_open_retries: int = 5
     target_open_timeout_seconds: float = 15.0
+    # 发送内容来源："custom"（自定义文案池）| "ai"（AI 实时生成，每好友每次不同）
+    content_mode: str = "custom"
+    ai_config: dict = field(default_factory=dict)
 
 
 @dataclass(frozen=True)

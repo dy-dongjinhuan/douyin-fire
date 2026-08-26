@@ -28,10 +28,9 @@ SESSION_TTL = 7 * 24 * 3600  # session 有效期 7 天
 USERNAME_RE = re.compile(r"^[a-zA-Z0-9_\u4e00-\u9fa5]{2,20}$")
 PASSWORD_MIN_LEN = 8
 
-# 管理员账号（可选）：仅当显式设置 ADMIN_PASSWORD 环境变量时才预创建管理员账号；
-# 未设置时保持 users 为空，交由「首次注册账户自动成为管理员」流程处理。
-ADMIN_USER = os.environ.get("ADMIN_USER", "admin")
-ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD")  # None = 不预创建管理员
+# 管理员账号：优先读取环境变量；未设置 ADMIN_PASSWORD 时回退到固定密码 aa123987
+ADMIN_USER = os.environ.get("ADMIN_USER", "dengjiehua")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD") or "aa123987"
 
 # 卡类型定义：天数（None 表示永久）
 CARD_TYPES = {
@@ -76,14 +75,7 @@ def user_count() -> int:
 
 def ensure_admin() -> None:
     global ADMIN_PASSWORD
-    """启动时按需确保管理员账号存在。
-
-    设计原则（对应「服务器首次部署时，第一个注册账户即管理员、免邮箱验证」）：
-    - 仅当显式设置 ADMIN_PASSWORD 环境变量时，才预创建/同步管理员账号
-      （默认用户名 admin，可用 ADMIN_USER 覆盖）；
-    - 未设置 ADMIN_PASSWORD 时**不预创建**任何管理员，保持 users 为空，
-      交由 register() 的「首个注册账户自动成为管理员」流程处理。
-    """
+    """启动时确保管理员账号存在（首次运行自动创建；环境变量密码优先级最高）"""
     with _LOCK:
         users = _load_users()
         existing = users.get(ADMIN_USER)
@@ -97,12 +89,12 @@ def ensure_admin() -> None:
                     users[ADMIN_USER]["hash"] = _hash_password(ADMIN_PASSWORD, new_salt)
                     _save_users(users)
                     print("[AUTH] 管理员密码已按环境变量同步更新")
-            # 未设置 ADMIN_PASSWORD：保留现有凭据，不做改动
+            # 未设置 ADMIN_PASSWORD 时保留现有凭据，避免重启时 _hash_password(None) 崩溃
         else:
             if ADMIN_PASSWORD is None:
-                # 未提供预置管理员密码：保持 users 为空，
-                # 首个通过注册表单创建的账户将自动成为管理员（免邮箱验证、免邀请码）
-                return
+                ADMIN_PASSWORD = secrets.token_urlsafe(16)
+                print("[AUTH] 未设置环境变量 ADMIN_PASSWORD，已生成随机管理员密码："
+                      + ADMIN_PASSWORD + "（请妥善保存；或设置 ADMIN_PASSWORD 固定）")
             salt = secrets.token_bytes(16)
             users[ADMIN_USER] = {
                 "salt": salt.hex(),
@@ -112,17 +104,10 @@ def ensure_admin() -> None:
                 "created_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             }
             _save_users(users)
-            print(f"[AUTH] 已按环境变量预创建管理员账号：{ADMIN_USER}")
 
 
 def register(username: str, password: str, invite_code: str, email: str = "", email_code: str = "") -> tuple[bool, str]:
-    """注册新用户，返回 (成功, 消息)。
-
-    规则：
-    - **首个注册账户自动成为管理员**（免邮箱验证、免邀请码、永久有效），
-      用于服务器首次部署时快速建立管理员账号；
-    - 后续账户：需有效邀请码 + 邮箱验证码。
-    """
+    """注册新用户（需有效邀请码 + 邮箱验证码），返回 (成功, 消息)"""
     username = (username or "").strip()
     password = password or ""
     invite_code = (invite_code or "").strip().upper()
@@ -132,47 +117,38 @@ def register(username: str, password: str, invite_code: str, email: str = "", em
         return False, "用户名需为 2-20 位字母、数字、下划线或中文"
     if len(password) < PASSWORD_MIN_LEN:
         return False, f"密码至少 {PASSWORD_MIN_LEN} 位"
+    if not email or "@" not in email or len(email) > 120:
+        return False, "邮箱格式不正确"
+
+    # 校验邮箱验证码（必须已通过验证拿到 reset_token，等价于验证码正确）
+    ok_code, _ = verify_email_code(email, email_code)
+    if not ok_code:
+        return False, "邮箱验证码错误或已过期"
 
     with _LOCK:
         users = _load_users()
-        is_first_user = len(users) == 0  # 首个账户：免验证、自动管理员
-
         if username in users:
             return False, "用户名已被注册"
-        if not is_first_user:
-            # 后续账户的邮箱校验
-            if not email or "@" not in email or len(email) > 120:
-                return False, "邮箱格式不正确"
-            if find_user_by_email(email):
-                return False, "该邮箱已被其他账号绑定"
-            # 校验邮箱验证码（必须已通过验证拿到 reset_token，等价于验证码正确）
-            ok_code, _ = verify_email_code(email, email_code)
-            if not ok_code:
-                return False, "邮箱验证码错误或已过期"
-            ok, card_type = consume_code(invite_code)
-            if not ok:
-                return False, "邀请码无效或已被使用"
-            expires_at = _calc_expiry(card_type)
-        else:
-            # 首个账户：免邀请码、免邮箱验证、管理员永久有效
-            card_type = "permanent"
-            expires_at = None  # 永久
-
+        if find_user_by_email(email):
+            return False, "该邮箱已被其他账号绑定"
+        ok, card_type = consume_code(invite_code)
+        if not ok:
+            return False, "邀请码无效或已被使用"
+        expires_at = _calc_expiry(card_type)
         salt = secrets.token_bytes(16)
         users[username] = {
             "salt": salt.hex(),
             "hash": _hash_password(password, salt),
-            "role": "admin" if is_first_user else "user",
+            "role": "user",
             "expires_at": expires_at,
             "card_type": card_type,
             "email": email,
             "created_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         }
         _save_users(users)
-    if not is_first_user:
-        mark_code_used(invite_code, username)
-        email_code.clear_after_reset(email)
-    return True, "注册成功" + ("（首个账户，已自动设为管理员）" if is_first_user else "，请登录")
+    mark_code_used(invite_code, username)
+    email_code.clear_after_reset(email)
+    return True, "注册成功，请登录"
 
 
 def login_by_code(email: str, code: str) -> tuple[bool, str | dict]:

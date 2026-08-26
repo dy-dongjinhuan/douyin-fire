@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>火花续连 · 让每段关系都不被遗忘</title>
+<meta name="description" content="为抖音好友关系设计的自动化续火花工具，安静、稳定、私密。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23fe2c55' d='M12 2l2.2 6.6L21 11l-6.8 2.4L12 20l-2.2-6.6L3 11l6.8-2.4z'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="theme.css">
+<style>
+  .home{ position:relative; z-index:1; }
+  .hnav{ position:sticky; top:0; z-index:30; display:flex; align-items:center; gap:18px; padding:16px 28px; border-bottom:1px solid var(--hairline); background:rgba(11,11,15,.72); backdrop-filter:blur(14px); }
+  .hnav .brand{ border:none; padding:0; height:auto; }
+  .hnav .links{ display:flex; gap:26px; margin-left:18px; }
+  .hnav .links a{ color:var(--text-2); font-size:13.5px; transition:color .18s; }
+  .hnav .links a:hover{ color:var(--text); }
+  .hnav .spacer{ flex:1; }
+  .hcontainer{ max-width:1120px; margin:0 auto; padding:0 28px; }
+  .hero{ padding:96px 0 72px; }
+  .eyebrow{ display:inline-flex; align-items:center; gap:8px; font-size:12.5px; color:var(--text-2); border:1px solid var(--hairline-2); border-radius:30px; padding:5px 14px; margin-bottom:26px; }
+  .eyebrow .pulse{ width:7px; height:7px; border-radius:50%; background:var(--accent); box-shadow:0 0 0 4px var(--accent-soft); }
+  .hero h1{ font-size:56px; line-height:1.08; font-weight:700; letter-spacing:-1.2px; margin:0 0 22px; max-width:16ch; }
+  .hero h1 .em{ color:var(--accent); }
+  .hero p.lead{ font-size:17px; color:var(--text-2); max-width:54ch; line-height:1.7; margin:0 0 34px; }
+  .hero .cta{ display:flex; gap:14px; flex-wrap:wrap; }
+  .hero-visual{ margin-top:64px; border:1px solid var(--hairline); border-radius:var(--radius-lg); background:linear-gradient(180deg,var(--surface),var(--bg-2)); overflow:hidden; box-shadow:var(--shadow-2); }
+  .hv-bar{ display:flex; align-items:center; gap:8px; padding:14px 18px; border-bottom:1px solid var(--hairline); }
+  .hv-bar .dotrow{ display:flex; gap:7px; }
+  .hv-bar .dotrow i{ width:11px; height:11px; border-radius:50%; background:var(--surface-3); display:block; }
+  .hv-bar .url{ margin-left:14px; font-size:12.5px; color:var(--text-3); font-family:ui-monospace,monospace; }
+  .hv-body{ display:grid; grid-template-columns:1.1fr .9fr; gap:0; }
+  .hv-left{ padding:30px; border-right:1px solid var(--hairline); }
+  .hv-row{ display:flex; align-items:center; gap:14px; padding:14px 0; border-bottom:1px solid var(--hairline); }
+  .hv-row:last-child{ border-bottom:none; }
+  .hv-av{ width:42px; height:42px; border-radius:50%; flex:0 0 42px; display:grid; place-items:center; font-weight:600; color:#fff; font-size:15px; }
+  .hv-name{ font-weight:600; font-size:14px; }
+  .hv-sub{ font-size:12px; color:var(--text-3); }
+  .hv-spark{ margin-left:auto; font-size:12.5px; color:var(--accent-2); display:flex; align-items:center; gap:6px; }
+  .hv-right{ padding:30px; }
+  .hv-stat{ display:flex; justify-content:space-between; padding:13px 0; border-bottom:1px solid var(--hairline); font-size:13.5px; }
+  .hv-stat:last-child{ border-bottom:none; }
+  .hv-stat b{ font-weight:600; }
+  section.block{ padding:84px 0; border-top:1px solid var(--hairline); }
+  .sec-head{ max-width:60ch; margin-bottom:44px; }
+  .sec-head .kicker{ font-size:12.5px; letter-spacing:1.5px; text-transform:uppercase; color:var(--accent-2); margin-bottom:14px; }
+  .sec-head h2{ font-size:34px; font-weight:700; letter-spacing:-.6px; margin:0 0 14px; }
+  .sec-head p{ font-size:15.5px; color:var(--text-2); line-height:1.7; margin:0; }
+  .feat-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:18px; }
+  .feat{ padding:24px; border:1px solid var(--hairline); border-radius:var(--radius); background:var(--surface); transition:border-color .2s, transform .2s var(--ease); }
+  .feat:hover{ border-color:var(--hairline-strong); transform:translateY(-3px); }
+  .feat .fi{ width:42px; height:42px; border-radius:12px; background:var(--accent-soft); color:var(--accent-2); display:grid; place-items:center; margin-bottom:18px; }
+  .feat h3{ margin:0 0 8px; font-size:16px; font-weight:600; }
+  .feat p{ margin:0; font-size:13.5px; color:var(--text-2); line-height:1.65; }
+  .steps{ display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:18px; counter-reset:step; }
+  .step{ position:relative; padding:26px 22px; border:1px solid var(--hairline); border-radius:var(--radius); background:var(--surface); }
+  .step .num{ font-size:13px; font-weight:700; color:var(--accent); width:34px; height:34px; border-radius:10px; border:1px solid var(--accent-line); background:var(--accent-soft); display:grid; place-items:center; margin-bottom:16px; }
+  .step h3{ margin:0 0 8px; font-size:15.5px; }
+  .step p{ margin:0; font-size:13.5px; color:var(--text-2); line-height:1.65; }
+  .trust{ display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:18px; }
+  .trust .t{ padding:22px; border:1px solid var(--hairline); border-radius:var(--radius); background:var(--surface); display:flex; gap:14px; align-items:flex-start; }
+  .trust .t .fi{ width:38px; height:38px; flex:0 0 38px; border-radius:10px; background:var(--surface-2); border:1px solid var(--hairline); display:grid; place-items:center; color:var(--text-2); }
+  .trust .t h4{ margin:0 0 5px; font-size:14.5px; }
+  .trust .t p{ margin:0; font-size:13px; color:var(--text-3); line-height:1.6; }
+  .cta-band{ border:1px solid var(--hairline-2); border-radius:var(--radius-lg); padding:56px 40px; text-align:center; background:linear-gradient(180deg,var(--surface),var(--bg-2)); }
+  .cta-band h2{ font-size:32px; margin:0 0 14px; letter-spacing:-.5px; }
+  .cta-band p{ color:var(--text-2); font-size:15px; margin:0 0 28px; }
+  .footer{ border-top:1px solid var(--hairline); padding:48px 0 60px; }
+  .footer .grid{ display:flex; justify-content:space-between; gap:30px; flex-wrap:wrap; align-items:flex-start; }
+  .footer .col h5{ font-size:13px; color:var(--text); margin:0 0 14px; }
+  .footer .col a{ display:block; color:var(--text-3); font-size:13px; margin-bottom:9px; transition:color .15s; }
+  .footer .col a:hover{ color:var(--text); }
+  .footer .fine{ margin-top:40px; font-size:12.5px; color:var(--text-4); display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px; }
+  @media(max-width:760px){ .hero h1{ font-size:38px; } .hv-body{ grid-template-columns:1fr; } .hv-left{ border-right:none; border-bottom:1px solid var(--hairline); } .hnav .links{ display:none; } }
+</style>
+</head>
+<body class="home">
+  <nav class="hnav">
+    <div class="brand">
+      <div class="brand-mark"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2l2.2 6.6L21 11l-6.8 2.4L12 20l-2.2-6.6L3 11l6.8-2.4z"/></svg></div>
+      <div class="brand-text"><div class="brand-name">火花续连</div></div>
+    </div>
+    <div class="links">
+      <a href="#cap">能力</a>
+      <a href="#how">原理</a>
+      <a href="#trust">信任与安全</a>
+    </div>
+    <div class="spacer"></div>
+    <a href="/login" class="btn ghost sm">登录</a>
+    <a href="/app" class="btn primary sm">进入控制台</a>
+  </nav>
+
+  <div class="hcontainer">
+    <!-- HERO -->
+    <section class="hero">
+      <span class="eyebrow reveal"><span class="pulse"></span> 为关系而生的自动化</span>
+      <h1 class="reveal">让每一段<span class="em">火花</span>，<br>都不被时间吹灭。</h1>
+      <p class="lead reveal">火花续连帮你安静地维系抖音里那些重要的人。设置一次，每天自动续上火花——没有打扰，没有遗忘，只有被认真对待的关系。</p>
+      <div class="cta reveal">
+        <a href="/app" class="btn primary">开始使用</a>
+        <a href="#how" class="btn ghost">了解原理</a>
+      </div>
+
+      <div class="hero-visual reveal">
+        <div class="hv-bar">
+          <div class="dotrow"><i></i><i></i><i></i></div>
+          <span class="url">app.firelink / 控制台</span>
+        </div>
+        <div class="hv-body">
+          <div class="hv-left">
+            <div class="hv-row">
+              <div class="hv-av" style="background:linear-gradient(135deg,#fe2c55,#ff7a5c)">林</div>
+              <div><div class="hv-name">林晚</div><div class="hv-sub">互相关注 · 火花第 128 天</div></div>
+              <div class="hv-spark"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 2l2.2 6.6L21 11l-6.8 2.4L12 20l-2.2-6.6L3 11l6.8-2.4z"/></svg>已续</div>
+            </div>
+            <div class="hv-row">
+              <div class="hv-av" style="background:linear-gradient(135deg,#5b9dff,#7be0c8)">陈</div>
+              <div><div class="hv-name">陈屿</div><div class="hv-sub">互相关注 · 火花第 56 天</div></div>
+              <div class="hv-spark"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 2l2.2 6.6L21 11l-6.8 2.4L12 20l-2.2-6.6L3 11l6.8-2.4z"/></svg>已续</div>
+            </div>
+            <div class="hv-row">
+              <div class="hv-av" style="background:linear-gradient(135deg,#a06bff,#ff6bd0)">苏</div>
+              <div><div class="hv-name">苏念</div><div class="hv-sub">互相关注 · 火花第 9 天</div></div>
+              <div class="hv-spark"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 2l2.2 6.6L21 11l-6.8 2.4L12 20l-2.2-6.6L3 11l6.8-2.4z"/></svg>已续</div>
+            </div>
+          </div>
+          <div class="hv-right">
+            <div class="hv-stat"><span>今日已续</span><b>3 / 3</b></div>
+            <div class="hv-stat"><span>连续稳定</span><b>46 天</b></div>
+            <div class="hv-stat"><span>下次执行</span><b>明日 09:00</b></div>
+            <div class="hv-stat"><span>运行模式</span><b>每日自动</b></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CAPABILITIES -->
+    <section class="block" id="cap">
+      <div class="sec-head reveal">
+        <div class="kicker">核心能力</div>
+        <h2>把续火花，交给安静可靠的系统</h2>
+        <p>不是又一个花哨的工具，而是一套为"长期维系"设计的稳定机制。你只需要做决定，执行交给我们。</p>
+      </div>
+      <div class="feat-grid">
+        <div class="feat reveal">
+          <div class="fi"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div>
+          <h3>互关好友识别</h3>
+          <p>一键从账号中识别所有互相关注的好友，自动整理成可勾选的清单，无需手动抄写昵称。</p>
+        </div>
+        <div class="feat reveal">
+          <div class="fi"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/><circle cx="12" cy="12" r="4"/></svg></div>
+          <h3>自选续连对象</h3>
+          <p>谁该续、谁先放一放，由你决定。可视化卡片点选，选择即时保存，下次执行只对选中的人生效。</p>
+        </div>
+        <div class="feat reveal">
+          <div class="fi"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+          <h3>每日定时执行</h3>
+          <p>设定一个时间，系统每天准时续上火花。后台稳定运行，不依赖你在线，也不会错过任何一天。</p>
+        </div>
+        <div class="feat reveal">
+          <div class="fi"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/></svg></div>
+          <h3>本地与私密</h3>
+          <p>登录态与好友配置仅存储在你授权的环境中，不上传无关数据，关系列表始终由你掌控。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- HOW -->
+    <section class="block" id="how">
+      <div class="sec-head reveal">
+        <div class="kicker">工作原理</div>
+        <h2>四步，之后便不再需要操心</h2>
+        <p>从连接到稳定执行，整个过程清晰、可控，每一步都为你保留撤回的余地。</p>
+      </div>
+      <div class="steps">
+        <div class="step reveal"><div class="num">1</div><h3>连接账号</h3><p>在你的设备上完成抖音登录，登录态安全保存，全程不经过第三方中转。</p></div>
+        <div class="step reveal"><div class="num">2</div><h3>识别好友</h3><p>系统读取互相关注列表，生成可视化的好友清单，一目了然。</p></div>
+        <div class="step reveal"><div class="num">3</div><h3>勾选对象</h3><p>挑选需要续火花的好友，也可随时调整，选择会即时生效。</p></div>
+        <div class="step reveal"><div class="num">4</div><h3>稳定续连</h3><p>每天按设定时间自动执行，日志全程可见，异常即时提醒。</p></div>
+      </div>
+    </section>
+
+    <!-- TRUST -->
+    <section class="block" id="trust">
+      <div class="sec-head reveal">
+        <div class="kicker">信任与安全</div>
+        <h2>克制，是我们对关系的基本尊重</h2>
+        <p>自动化不应以牺牲隐私为代价。火花续连只做它该做的事。</p>
+      </div>
+      <div class="trust">
+        <div class="t reveal"><div class="fi"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg></div><div><h4>数据最小化</h4><p>只读取维系火花所必需的信息，不触碰私信、不读取内容。</p></div></div>
+        <div class="t reveal"><div class="fi"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/></svg></div><div><h4>你随时可停</h4><p>一键停止、清空配置或移除登录态，没有任何锁定，关系回到你手里。</p></div></div>
+        <div class="t reveal"><div class="fi"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg></div><div><h4>过程透明</h4><p>每一次执行都有日志可追溯，成功与否、对谁执行，清清楚楚。</p></div></div>
+        <div class="t reveal"><div class="fi"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div><h4>稳定优先</h4><p>把可靠性放在花哨之前，宁可慢一点，也不打断你的关系。</p></div></div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="block">
+      <div class="cta-band reveal">
+        <h2>关系是长期的，工具也该是</h2>
+        <p>花一分钟设置，把续火花这件事，从"别忘了"变成"不用记"。</p>
+        <a href="/app" class="btn primary">进入控制台</a>
+      </div>
+    </section>
+  </div>
+
+  <footer class="footer">
+    <div class="hcontainer">
+      <div class="grid">
+        <div class="col" style="max-width:280px">
+          <div class="brand" style="border:none;padding:0;height:auto;margin-bottom:12px">
+            <div class="brand-mark"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2l2.2 6.6L21 11l-6.8 2.4L12 20l-2.2-6.6L3 11l6.8-2.4z"/></svg></div>
+            <div class="brand-text"><div class="brand-name">火花续连</div></div>
+          </div>
+          <p style="color:var(--text-3);font-size:13px;line-height:1.6;margin:0">让每一段火花，都不被时间吹灭。</p>
+        </div>
+        <div class="col"><h5>产品</h5><a href="#cap">核心能力</a><a href="#how">工作原理</a><a href="#trust">信任与安全</a><a href="/app">控制台</a></div>
+        <div class="col"><h5>支持</h5><a href="/login">登录</a></div>
+      </div>
+      <div class="fine">
+        <span>© 2026 火花续连 · 用心维系每一段关系</span>
+        <span>本工具仅用于个人关系维系，请遵守平台规则。</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="uikit.js"></script>
+  <script>
+    // 首页轻量入场：导航出现 + 英雄区渐入
+    document.querySelectorAll('.reveal').forEach(function(el,i){
+      el.style.transitionDelay = Math.min(i*40,240)+'ms';
+    });
+    UI.observeReveal();
+    // 导航锚点平滑滚动
+    document.querySelectorAll('.hnav .links a[href^="#"]').forEach(function(a){
+      a.addEventListener('click',function(e){ e.preventDefault(); var t=document.querySelector(a.getAttribute('href')); if(t) t.scrollIntoView({behavior:'smooth',block:'start'}); });
+    });
+  </script>
+</body>
+</html>

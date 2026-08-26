@@ -47,14 +47,24 @@ def load_task(settings: Settings) -> TaskConfig:
     if not isinstance(raw, dict):
         raise ConfigError("任务配置必须是 JSON 对象")
 
+    content_mode = str(raw.get("content_mode", "custom") or "custom").strip().lower()
+    if content_mode not in {"custom", "ai"}:
+        raise ConfigError("content_mode 必须是 custom 或 ai")
+    ai_config = raw.get("ai", {})
+    if not isinstance(ai_config, dict):
+        raise ConfigError("ai 必须是对象")
+
     targets_raw = raw.get("targets")
     if targets_raw is None and "friends" in raw:
         friends = raw.get("friends")
         messages = raw.get("messages")
         if not isinstance(friends, list) or not friends:
             raise ConfigError("friends 必须是非空数组")
-        if not isinstance(messages, list) or not messages:
-            raise ConfigError("messages 必须是非空数组")
+        if not isinstance(messages, list):
+            raise ConfigError("messages 必须是数组")
+        # AI 内容模式下允许自定义文案池为空（文案由 AI 实时生成）
+        if content_mode == "custom" and not messages:
+            raise ConfigError("自定义内容模式下 messages 必须是非空数组")
         targets_raw = [{"name": name, "messages": messages} for name in friends]
     if not isinstance(targets_raw, list) or not targets_raw:
         raise ConfigError("targets 必须是非空数组")
@@ -94,6 +104,8 @@ def load_task(settings: Settings) -> TaskConfig:
         prevent_duplicates=raw.get("prevent_duplicates", False),
         target_open_retries=target_open_retries,
         target_open_timeout_seconds=target_open_timeout_seconds,
+        content_mode=content_mode,
+        ai_config=ai_config,
     )
     if not isinstance(task.continue_on_error, bool):
         raise ConfigError("continue_on_error 必须是布尔值")
@@ -123,8 +135,9 @@ def _parse_target(raw: Any, index: int, config_dir: Path) -> Target:
         raise ConfigError(f"{label} 必须是对象")
     name = _non_empty_string(raw.get("name"), f"{label}.name")
     messages_raw = raw.get("messages")
-    if not isinstance(messages_raw, list) or not messages_raw:
-        raise ConfigError(f"{label}.messages 必须是非空数组")
+    if not isinstance(messages_raw, list):
+        raise ConfigError(f"{label}.messages 必须是数组")
+    # 允许空数组：AI 内容模式下文案由 AI 实时生成（load_task 已校验 custom 模式非空）
     return Target(name=name, messages=tuple(_parse_message(item, f"{label}.messages[{i}]", config_dir) for i, item in enumerate(messages_raw)))
 
 

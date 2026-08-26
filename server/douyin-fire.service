@@ -1,0 +1,23 @@
+[Unit]
+Description=Douyin Fire Panel
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/www/wwwroot/douyin-fire
+ExecStart=/www/wwwroot/douyin-fire/venv/bin/python /www/wwwroot/douyin-fire/gui.py
+Restart=always
+RestartSec=3
+User=root
+
+# ===== 运行参数（按需要修改）=====
+Environment=GUI_HOST=127.0.0.1
+Environment=GUI_PORT=8765
+# server = 开启登录（生产推荐）；local = 免登录本地模式
+Environment=DEPLOY_MODE=server
+Environment=ADMIN_USER=dengjiehua
+# 请修改为强密码，或用随机生成（不设则首次启动在日志里随机生成）
+Environment=ADMIN_PASSWORD=请修改为强密码
+
+[Install]
+WantedBy=multi-user.target

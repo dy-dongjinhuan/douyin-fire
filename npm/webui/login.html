@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%3E%3Cpath%20d='M12%203l1.8%205.2L19%2010l-5.2%201.8L12%2017l-1.8-5.2L5%2010z'%20fill='%23ff375f'/%3E%3C/svg%3E">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>登录 - 抖音自动续火花</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --glass-bg: rgba(255, 255, 255, 0.10);
+    --glass-bg-strong: rgba(255, 255, 255, 0.16);
+    --glass-border: rgba(255, 255, 255, 0.22);
+    --glass-border-soft: rgba(255, 255, 255, 0.14);
+    --text: #f5f6fa;
+    --text-dim: rgba(245, 246, 250, 0.62);
+    --text-faint: rgba(245, 246, 250, 0.42);
+    --accent: #ff375f;
+    --accent-soft: rgba(255, 55, 95, 0.16);
+    --green: #34d399;
+    --amber: #fbbf24;
+    --radius: 22px;
+    --radius-sm: 14px;
+    --shadow: 0 8px 32px rgba(0, 0, 0, 0.28);
+  }
+
+  html, body { height: 100%; }
+
+  /* ===== 红色自定义滚动条 ===== */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 999px; }
+  ::-webkit-scrollbar-thumb { background: #ff5a5a; border-radius: 999px; }
+  ::-webkit-scrollbar-thumb:hover { background: #ff7a7a; }
+  html { scrollbar-color: #ff5a5a rgba(255,255,255,0.05); scrollbar-width: thin; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: var(--text);
+    min-height: 100vh;
+    padding: 28px 18px calc(28px + env(safe-area-inset-bottom));
+    position: relative;
+    overflow-x: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* 高级黑：深炭黑为底，顶部柔光营造层次，边缘自然压暗，纯静态无动效 */
+    background-color: #08080c;
+    background-image:
+      radial-gradient(130% 90% at 50% -15%, rgba(46,46,60,0.55) 0%, rgba(20,20,28,0.10) 42%, rgba(8,8,12,0) 70%),
+      radial-gradient(120% 120% at 50% 118%, rgba(255,55,95,0.07) 0%, rgba(255,55,95,0) 52%),
+      linear-gradient(180deg, #0b0b10 0%, #08080c 42%, #050507 100%);
+    background-attachment: fixed;
+  }
+
+  /* 极淡颗粒质感，强化高级黑观感（静态，无动画） */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.045;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 180px 180px;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto;
+    perspective: 1100px;
+    perspective-origin: center center;
+  }
+
+  /* ===== 毛玻璃卡片 ===== */
+  .glass {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border-soft);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,0.18);
+  }
+
+  .card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border-soft);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,0.18);
+    overflow: hidden;
+  }
+
+  .card-header {
+    background: var(--glass-bg-strong);
+    border-bottom: 1px solid var(--glass-border-soft);
+    color: var(--text);
+    padding: 30px 32px 24px;
+    text-align: center;
+  }
+  .card-header h1 { font-size: 22px; font-weight: 700; margin-bottom: 8px; letter-spacing: 0.3px; }
+  .card-header p { font-size: 13px; color: var(--text-dim); }
+
+  .tabs {
+    display: flex;
+    border-bottom: 1px solid var(--glass-border-soft);
+    background: rgba(255,255,255,0.04);
+  }
+  .tab {
+    flex: 1;
+    padding: 15px;
+    text-align: center;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.2s;
+    border-bottom: 2px solid transparent;
+    user-select: none;
+  }
+  .tab.active {
+    color: var(--text);
+    border-bottom-color: var(--accent);
+    background: var(--accent-soft);
+  }
+
+  .form { padding: 28px 32px 32px; display: none; }
+  .form.active { display: block; }
+  .field { margin-bottom: 18px; }
+  .field label {
+    display: block;
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-bottom: 7px;
+    font-weight: 500;
+  }
+  .field input {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--text);
+    background: rgba(0, 0, 0, 0.22);
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .field input::placeholder { color: var(--text-faint); }
+  .field input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(255,55,95,0.18);
+    background: rgba(0, 0, 0, 0.30);
+  }
+
+  /* ===== 玻璃按钮 ===== */
+  .btn {
+    width: 100%;
+    padding: 13px;
+    border: 1px solid var(--glass-border);
+    border-radius: 999px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--text);
+    background: var(--glass-bg-strong);
+    transition: transform 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.22);
+  }
+  .btn:hover:not(:disabled) { transform: translateY(-2px); background: rgba(255,255,255,0.24); box-shadow: 0 8px 22px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.3); }
+  .btn:active:not(:disabled) { transform: translateY(0); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* 幽灵按钮（次要操作）与紧凑按钮 */
+  .btn-ghost {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: var(--glass-border-soft);
+    color: var(--text-dim);
+  }
+  .btn-ghost:hover:not(:disabled) { background: rgba(255, 255, 255, 0.12); color: var(--text); }
+  .btn-sm { padding: 10px 14px; font-size: 13px; white-space: nowrap; width: auto; flex: 0 0 auto; }
+
+  /* 输入框 + 发送按钮 同一行：按钮固定宽度，输入占满剩余，避免按钮比输入框长 */
+  .field-row { display: flex; gap: 10px; align-items: stretch; }
+  .field-row > input { flex: 1 1 auto; min-width: 0; }
+  .field-row > .btn { flex: 0 0 116px; width: 116px; }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #ff375f 0%, #ff5e7e 100%);
+    border-color: rgba(255,255,255,0.3);
+    color: #fff;
+    box-shadow: 0 8px 22px rgba(255,55,95,0.32), inset 0 1px 0 rgba(255,255,255,0.4);
+  }
+  .btn-primary:hover:not(:disabled) { background: linear-gradient(135deg, #ff4d6e 0%, #ff7d98 100%); }
+
+  .msg {
+    padding: 11px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    margin-bottom: 16px;
+    display: none;
+    border: 1px solid var(--glass-border);
+  }
+  .msg.error { display: block; background: rgba(239,68,68,0.18); color: #fecaca; border-color: rgba(239,68,68,0.35); }
+  .msg.success { display: block; background: rgba(16,185,129,0.18); color: #a7f3d0; border-color: rgba(16,185,129,0.35); }
+
+  .hint {
+    text-align: center;
+    font-size: 12.5px;
+    color: var(--text-faint);
+    margin-top: 16px;
+    line-height: 1.6;
+  }
+
+  /* ===== 手机端适配 ===== */
+  @media (max-width: 768px) {
+    body { padding: 16px; align-items: stretch; }
+    .container { max-width: 100%; }
+    .card { border-radius: 18px; }
+    .card-header { padding: 24px 20px 20px; }
+    .card-header h1 { font-size: 20px; }
+    .form { padding: 22px 20px 26px; }
+    .field input { font-size: 16px; padding: 13px 14px; } /* 防 iOS 聚焦放大 */
+    .tab { font-size: 15px; padding: 14px; }
+    .btn { padding: 15px; font-size: 16px; }
+    .hint { font-size: 13px; line-height: 1.7; }
+  }
+  @media (max-width: 380px) {
+    body { padding: 10px; }
+    .card-header h1 { font-size: 18px; }
+    .form { padding: 18px 16px 22px; }
+  }
+  @supports (padding: env(safe-area-inset-left)) {
+    @media (max-width: 768px) {
+      body { padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
+    }
+  }
+
+
+
+  /* ===== 动画与美化增强 ===== */
+  .card {
+    transition: transform 0.12s ease-out, box-shadow 0.35s ease;
+    transform-style: preserve-3d;
+    will-change: transform;
+  }
+  /* 仅「忘记密码」弹窗：与主卡片一致的高级黑毛玻璃，配浅色文字 */
+  .forgot-card { position: relative; }
+  .forgot-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(155deg, rgba(34,34,48,0.78), rgba(18,18,26,0.72));
+    z-index: 0;
+    pointer-events: none;
+  }
+  .forgot-card > * { position: relative; z-index: 1; }
+  .forgot-card h2 { color: #f5f6fa; }
+  .forgot-card .field label { color: rgba(245,246,250,0.7); }
+  .forgot-card .hint { color: rgba(245,246,250,0.5); }
+  .forgot-card .field input {
+    color: #f5f6fa;
+    background: rgba(0,0,0,0.30);
+    border-color: rgba(255,255,255,0.18);
+  }
+  .forgot-card .field input::placeholder { color: rgba(245,246,250,0.42); }
+  .forgot-card .btn:not(.btn-primary) { color: #f5f6fa; }
+  .forgot-card .btn-ghost { color: rgba(245,246,250,0.78); background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.16); }
+  .forgot-card .btn-ghost:hover:not(:disabled) { color: #fff; background: rgba(255,255,255,0.16); }
+  .forgot-card .msg.error { background: rgba(239,68,68,0.18); color: #fecaca; border-color: rgba(239,68,68,0.35); }
+  .forgot-card .msg.success { background: rgba(16,185,129,0.18); color: #a7f3d0; border-color: rgba(16,185,129,0.35); }
+  /* 跟随鼠标的高光层 */
+  .card .tilt-glow {
+    position: absolute;
+    inset: 0;
+    border-radius: var(--radius);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,0.28), rgba(255,255,255,0) 55%);
+    mix-blend-mode: screen;
+    z-index: 2;
+  }
+  .card:hover .tilt-glow { opacity: 1; }
+  .card-header h1 {
+    animation: titleGlow 3.2s ease-in-out infinite;
+  }
+  @keyframes titleGlow {
+    0%, 100% { text-shadow: 0 0 10px rgba(255,55,95,0.22); }
+    50%      { text-shadow: 0 0 22px rgba(255,55,95,0.50); }
+  }
+
+  /* ===== 背景火花粒子（已移除，背景保持纯黑） ===== */
+
+  /* ===== 高级黑增强套件（与控制台一致，单色抖音红系，不彩虹） ===== */
+  /* 顶部滚动进度细线 */
+  #scrollProgress {
+    position: fixed; top: 0; left: 0; height: 3px; width: 0%;
+    background: linear-gradient(90deg, var(--accent), #ff8aa6, var(--accent));
+    background-size: 220% 100%;
+    z-index: 9999; pointer-events: none;
+    box-shadow: 0 0 10px rgba(255,55,95,.7);
+    animation: progressFlow 2.4s linear infinite;
+  }
+  @keyframes progressFlow { to { background-position: 220% 0; } }
+
+  /* 登录卡片 hover 流动渐变描边（抖音红系） */
+  .card { position: relative; }
+  .card::after {
+    content: ""; position: absolute; inset: 0; border-radius: inherit;
+    padding: 1.5px; pointer-events: none; opacity: 0;
+    background: linear-gradient(120deg, #ff375f, #ff9ab2, #ff375f, #ff9ab2);
+    background-size: 300% 300%;
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude;
+    transition: opacity .35s ease;
+    animation: borderFlow 3.5s linear infinite;
+  }
+  .card:hover::after { opacity: 1; }
+  @keyframes borderFlow { to { background-position: 300% 0; } }
+
+  /* 按钮涟漪 */
+  .btn { position: relative; overflow: hidden; }
+  .btn .ripple {
+    position: absolute; border-radius: 50%; transform: scale(0);
+    background: rgba(255,255,255,.35); pointer-events: none;
+    animation: ripple .6s ease-out forwards;
+  }
+  @keyframes ripple { to { transform: scale(2.6); opacity: 0; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    #scrollProgress, .card::after { animation: none !important; }
+  }
+
+  /* ===== 统一线性图标系统（替换 emoji，去 AI 味） ===== */
+  .icon, .ico > svg, .logo-ico, .user-ico {
+    stroke: currentColor; fill: none;
+    stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round;
+  }
+  .icon { width: 17px; height: 17px; display: inline-block; vertical-align: -0.22em; flex-shrink: 0; }
+  .icon-sm { width: 14px; height: 14px; }
+  .icon-amber { color: var(--amber); }
+  .logo-ico { width: 24px; height: 24px; color: var(--accent); vertical-align: -0.32em; margin-right: 5px; }
+
+</style>
+</head>
+<body>
+<svg class="icon-sprite" aria-hidden="true" focusable="false" style="position:absolute;width:0;height:0;overflow:hidden"><defs>
+<symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></symbol>
+<symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1"/></symbol>
+<symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="8" r="4"/><path d="M11 11l9 9M16 16l2.5-2.5M13.5 13.5 16 11"/></symbol>
+<symbol id="i-crown" viewBox="0 0 24 24"><path d="M3 8l4.5 3.5L12 5l4.5 6.5L21 8l-1.5 11h-15z"/><path d="M8 19v-3M16 19v-3"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3.5 2"/></symbol>
+<symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0M16 5.5a3 3 0 0 1 0 6M16.5 19a5.5 5.5 0 0 0-1.5-3.8"/></symbol>
+<symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M4 7l8 6 8-6"/></symbol>
+<symbol id="i-send" viewBox="0 0 24 24"><path d="M22 2 11 13M22 2 2 9l9 4 4 9z"/></symbol>
+<symbol id="i-flask" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3"/><path d="M7.5 14h9"/></symbol>
+<symbol id="i-stop" viewBox="0 0 24 24"><rect x="6.5" y="6.5" width="11" height="11" rx="2.5"/></symbol>
+<symbol id="i-save" viewBox="0 0 24 24"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3M8 21v-6h8v6"/></symbol>
+<symbol id="i-doc" viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M9.5 13h5M9.5 16.5h5"/></symbol>
+<symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1.1"/><circle cx="4" cy="12" r="1.1"/><circle cx="4" cy="18" r="1.1"/></symbol>
+<symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 3.5l8.5 15H3.5z"/><path d="M12 9.5v4.5M12 16.5h.01"/></symbol>
+<symbol id="i-card" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M2.5 10h19M6.5 15h4"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></symbol>
+<symbol id="i-cross" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+<symbol id="i-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+<symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></symbol>
+<symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4M7.5 9l4.5-5 4.5 5"/><path d="M4 17v2.5A1.5 1.5 0 0 0 5.5 21h13a1.5 1.5 0 0 0 1.5-1.5V17"/></symbol>
+<symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6"/><path d="M5 20a7 7 0 0 1 14 0"/></symbol>
+</defs></svg>
+
+<div id="scrollProgress"></div>
+<div class="container">
+<div class="card" id="loginCard">
+  <div class="tilt-glow"></div>
+  <div class="card-header">
+    <h1><svg class="logo-ico" viewBox="0 0 24 24"><use href="#i-spark"/></svg>抖音自动续火花</h1>
+    <p>请登录后进入管理面板</p>
+  </div>
+  <div class="tabs">
+    <div class="tab active" id="tabLogin" onclick="switchTab('login')">登 录</div>
+    <div class="tab" id="tabRegister" onclick="switchTab('register')">注 册</div>
+  </div>
+
+  <!-- 登录表单 -->
+  <form class="form active" id="formLogin" onsubmit="return doLogin(event)">
+    <div class="msg" id="loginMsg"></div>
+
+    <!-- 密码登录 -->
+    <div id="loginPwdBox">
+      <div class="field">
+        <label>用户名</label>
+        <input type="text" id="loginUsername" placeholder="请输入用户名" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label>密码</label>
+        <input type="password" id="loginPassword" placeholder="请输入密码" autocomplete="current-password" required>
+      </div>
+    </div>
+
+    <!-- 验证码登录（邮箱 + 验证码） -->
+    <div id="loginCodeBox" style="display:none;">
+      <div class="field">
+        <label>邮箱</label>
+        <input type="email" id="loginEmail" placeholder="请输入注册邮箱" autocomplete="email">
+      </div>
+      <div class="field">
+        <label>验证码</label>
+        <div class="field-row">
+          <input type="text" id="loginCode" placeholder="6 位验证码" maxlength="6">
+          <button type="button" class="btn btn-ghost btn-sm" id="loginSendBtn" onclick="loginSend()">获取验证码</button>
+        </div>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary" id="loginBtn">登 录</button>
+    <p class="hint">
+      <a href="javascript:void(0)" onclick="toggleLoginMode()" id="loginModeLink" style="color:var(--accent);text-decoration:none;">使用验证码登录</a>
+      　·　<a href="javascript:void(0)" onclick="openForgot()" style="color:var(--accent);text-decoration:none;">忘记密码？</a>
+    </p>
+  </form>
+
+  <!-- 注册表单 -->
+  <form class="form" id="formRegister" onsubmit="return doRegister(event)">
+    <div class="msg" id="registerMsg"></div>
+    <div class="field">
+      <label>用户名</label>
+      <input type="text" id="regUsername" placeholder="2-20 位字母、数字、下划线或中文" autocomplete="username" required>
+    </div>
+    <div class="field">
+      <label>邮箱（必填，用于登录与找回密码）</label>
+      <input type="email" id="regEmail" placeholder="如 123@qq.com" autocomplete="email" required>
+    </div>
+    <div class="field">
+      <label>验证码</label>
+      <div class="field-row">
+        <input type="text" id="regCode" placeholder="6 位验证码" maxlength="6">
+        <button type="button" class="btn btn-ghost btn-sm" id="regSendBtn" onclick="registerSend()">获取验证码</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>密码</label>
+      <input type="password" id="regPassword" placeholder="至少 8 位" autocomplete="new-password" required>
+    </div>
+    <div class="field">
+      <label>确认密码</label>
+      <input type="password" id="regPassword2" placeholder="再次输入密码" autocomplete="new-password" required>
+    </div>
+    <div class="field">
+      <label>邀请码</label>
+      <input type="text" id="regInvite" placeholder="请输入有效的邀请码" autocomplete="off" required>
+    </div>
+    <button type="submit" class="btn btn-primary" id="registerBtn">注 册</button>
+  </form>
+</div>
+</div>
+
+<!-- 忘记密码弹窗（玻璃卡片 + 3D 跟随倾斜） -->
+<div id="forgotModal" style="display:none; position:fixed; inset:0; z-index:50; align-items:center; justify-content:center; background:rgba(0,0,0,0.55); perspective:1100px; perspective-origin:center center;">
+  <div class="card forgot-card" id="forgotCard" style="position:relative; width:100%; max-width:400px; margin:16px; padding:24px 26px; box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+    <div class="tilt-glow"></div>
+    <h2 style="font-size:18px; margin-bottom:14px;">找回密码</h2>
+    <div class="msg" id="forgotMsg"></div>
+    <div class="field">
+      <label>绑定邮箱</label>
+      <input type="email" id="fgEmail" placeholder="请输入注册时填写的邮箱" autocomplete="email">
+    </div>
+    <div class="field">
+      <label>验证码</label>
+      <div class="field-row">
+        <input type="text" id="fgCode" placeholder="6 位验证码" maxlength="6">
+        <button type="button" class="btn btn-ghost btn-sm" id="fgSendBtn" onclick="forgotSend()">获取验证码</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>新密码</label>
+      <input type="password" id="fgNewPwd" placeholder="至少 8 位" autocomplete="new-password">
+    </div>
+    <div style="display:flex; gap:10px; margin-top:6px;">
+      <button type="button" class="btn btn-primary" onclick="forgotReset()">重置密码</button>
+      <button type="button" class="btn btn-ghost" onclick="closeForgot()">取消</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function switchTab(tab) {
+  document.getElementById("tabLogin").classList.toggle("active", tab === "login");
+  document.getElementById("tabRegister").classList.toggle("active", tab === "register");
+  document.getElementById("formLogin").classList.toggle("active", tab === "login");
+  document.getElementById("formRegister").classList.toggle("active", tab === "register");
+  const targetForm = document.getElementById(tab === "login" ? "formLogin" : "formRegister");
+  if (typeof gsap !== "undefined" && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    gsap.fromTo(targetForm, { autoAlpha: 0, y: 14 }, { autoAlpha: 1, y: 0, duration: 0.4, ease: "power2.out", clearProps: "all" });
+  }
+}
+
+function showMsg(id, type, text) {
+  const el = document.getElementById(id);
+  el.className = "msg " + type;
+  el.textContent = text;
+}
+
+async function doLogin(e) {
+  e.preventDefault();
+  const btn = document.getElementById("loginBtn");
+  btn.disabled = true;
+  btn.textContent = "登录中...";
+  try {
+    let resp, data = {};
+    if (loginMode === "code") {
+      // 验证码登录：邮箱 + 验证码
+      resp = await fetch("/api/auth/login-by-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          email: document.getElementById("loginEmail").value.trim(),
+          code: document.getElementById("loginCode").value.trim()
+        })
+      });
+    } else {
+      // 密码登录
+      resp = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          username: document.getElementById("loginUsername").value.trim(),
+          password: document.getElementById("loginPassword").value
+        })
+      });
+    }
+    try {
+      data = await resp.json();
+    } catch (e) {
+      data = {};
+    }
+    if (resp.ok && data.ok) {
+      // 所有用户（含管理员）默认进入控制台；管理员可在控制台内点「管理后台」进入后台
+      location.href = "/app";
+    } else {
+      showMsg("loginMsg", "error", data.error || ("登录失败 (HTTP " + resp.status + ")"));
+    }
+  } catch (err) {
+    showMsg("loginMsg", "error", "网络错误: " + err.message);
+  }
+  btn.disabled = false;
+  btn.textContent = "登 录";
+}
+
+async function doRegister(e) {
+  e.preventDefault();
+  const pwd = document.getElementById("regPassword").value;
+  const pwd2 = document.getElementById("regPassword2").value;
+  if (pwd !== pwd2) {
+    showMsg("registerMsg", "error", "两次输入的密码不一致");
+    return false;
+  }
+  const email = document.getElementById("regEmail").value.trim();
+  const code = document.getElementById("regCode").value.trim();
+  if (!email || !code) {
+    showMsg("registerMsg", "error", "请先填写邮箱并获取验证码");
+    return false;
+  }
+  const btn = document.getElementById("registerBtn");
+  btn.disabled = true;
+  btn.textContent = "注册中...";
+  try {
+    // 先校验邮箱验证码
+    const v = await fetch("/api/auth/verify-email-code", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, code })
+    });
+    const vd = await v.json().catch(() => ({}));
+    if (!(v.ok && vd.ok)) {
+      showMsg("registerMsg", "error", vd.error || "邮箱验证码错误");
+      btn.disabled = false; btn.textContent = "注 册"; return false;
+    }
+    const resp = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        username: document.getElementById("regUsername").value.trim(),
+        password: pwd,
+        email: email,
+        email_code: code,
+        invite_code: document.getElementById("regInvite").value.trim().toUpperCase()
+      })
+    });
+    let data = {};
+    try {
+      data = await resp.json();
+    } catch (e) {
+      data = {};
+    }
+    if (resp.ok && data.ok) {
+      showMsg("registerMsg", "success", data.message + "，正在跳转登录...");
+      setTimeout(() => {
+        switchTab("login");
+        document.getElementById("loginUsername").value = document.getElementById("regUsername").value.trim();
+        document.getElementById("loginPassword").focus();
+      }, 800);
+    } else {
+      showMsg("registerMsg", "error", data.error || ("注册失败 (HTTP " + resp.status + ")"));
+    }
+  } catch (err) {
+    showMsg("registerMsg", "error", "网络错误: " + err.message);
+  }
+  btn.disabled = false;
+  btn.textContent = "注 册";
+}
+
+// 会员到期跳转回登录页时给出提示
+(function () {
+  const params = new URLSearchParams(location.search);
+  if (params.get("expired") === "1") {
+    showMsg("loginMsg", "error", "会员已到期，请联系管理员购买卡密后重新登录");
+  }
+})();
+
+/* ===== 通用：发送验证码（开发模式：验证码直接显示在页面，不真实发信） ===== */
+async function sendCodeGeneric(btnId, email, kind, msgId) {
+  if (!email) { showMsg(msgId, "error", "请先填写邮箱"); return false; }
+  const btn = document.getElementById(btnId);
+  btn.disabled = true;
+  try {
+    const resp = await fetch("/api/auth/send-email-code", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, kind })
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (resp.ok && data.ok) {
+      // 开发模式：验证码直接展示，方便联调（生产环境请移除）
+      const codeTip = data.code ? `　验证码：${data.code}` : "";
+      showMsg(msgId, "success", (data.message || "验证码已生成") + codeTip);
+      let s = 60;
+      btn.textContent = s + "s 后重发";
+      const t = setInterval(() => {
+        s--;
+        if (s <= 0) { clearInterval(t); btn.textContent = "获取验证码"; btn.disabled = false; }
+        else btn.textContent = s + "s 后重发";
+      }, 1000);
+      return true;
+    } else {
+      showMsg(msgId, "error", data.error || "发送失败");
+      btn.disabled = false;
+      return false;
+    }
+  } catch (err) {
+    showMsg(msgId, "error", "网络错误: " + err.message);
+    btn.disabled = false;
+    return false;
+  }
+}
+
+async function registerSend() {
+  await sendCodeGeneric("regSendBtn", document.getElementById("regEmail").value.trim(), "register", "registerMsg");
+}
+
+async function loginSend() {
+  await sendCodeGeneric("loginSendBtn", document.getElementById("loginEmail").value.trim(), "login", "loginMsg");
+}
+
+// 登录模式切换（密码 / 验证码）
+let loginMode = "pwd";
+function toggleLoginMode() {
+  loginMode = loginMode === "pwd" ? "code" : "pwd";
+  const isCode = loginMode === "code";
+  document.getElementById("loginPwdBox").style.display = isCode ? "none" : "block";
+  document.getElementById("loginCodeBox").style.display = isCode ? "block" : "none";
+  document.getElementById("loginModeLink").textContent = isCode ? "使用密码登录" : "使用验证码登录";
+  document.getElementById("loginUsername").required = !isCode;
+  document.getElementById("loginPassword").required = !isCode;
+  document.getElementById("loginEmail").required = isCode;
+}
+
+/* ===== 忘记密码（邮箱验证码） ===== */
+function openForgot() {
+  const m = document.getElementById("forgotModal");
+  m.style.display = "flex";
+  const card = document.getElementById("forgotCard");
+  if (typeof gsap !== "undefined" && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    gsap.fromTo(card, { autoAlpha: 0, y: 22, scale: 0.9 }, { autoAlpha: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.5)" });
+  }
+}
+function closeForgot() { document.getElementById("forgotModal").style.display = "none"; }
+document.getElementById("forgotModal").addEventListener("click", function (e) {
+  if (e.target === this) closeForgot();
+});
+
+async function forgotSend() {
+  const email = document.getElementById("fgEmail").value.trim();
+  if (!email) { showMsg("forgotMsg", "error", "请先填写邮箱"); return; }
+  const btn = document.getElementById("fgSendBtn");
+  btn.disabled = true;
+  try {
+    const resp = await fetch("/api/auth/send-email-code", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, kind: "reset" })
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (resp.ok && data.ok) {
+      showMsg("forgotMsg", "success", data.message || "验证码已发送，请查收邮箱");
+      let s = 60;
+      btn.textContent = s + "s 后重发";
+      const t = setInterval(() => { s--; if (s <= 0) { clearInterval(t); btn.textContent = "获取验证码"; btn.disabled = false; } else btn.textContent = s + "s 后重发"; }, 1000);
+    } else {
+      showMsg("forgotMsg", "error", data.error || "发送失败");
+      btn.disabled = false;
+    }
+  } catch (err) {
+    showMsg("forgotMsg", "error", "网络错误: " + err.message);
+    btn.disabled = false;
+  }
+}
+
+async function forgotReset() {
+  const email = document.getElementById("fgEmail").value.trim();
+  const code = document.getElementById("fgCode").value.trim();
+  const pwd = document.getElementById("fgNewPwd").value;
+  if (!email || !code || !pwd) { showMsg("forgotMsg", "error", "请完整填写邮箱、验证码和新密码"); return; }
+  try {
+    const v = await fetch("/api/auth/verify-email-code", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, code })
+    });
+    const vd = await v.json().catch(() => ({}));
+    if (!(v.ok && vd.ok)) { showMsg("forgotMsg", "error", vd.error || "验证码错误"); return; }
+    const r = await fetch("/api/auth/reset-password", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, reset_token: vd.message, new_password: pwd })
+    });
+    const rd = await r.json().catch(() => ({}));
+    if (r.ok && rd.ok) {
+      showMsg("forgotMsg", "success", "密码已重置，请用新密码登录");
+      setTimeout(() => { closeForgot(); switchTab("login"); }, 1200);
+    } else {
+      showMsg("forgotMsg", "error", rd.error || "重置失败");
+    }
+  } catch (err) {
+    showMsg("forgotMsg", "error", "网络错误: " + err.message);
+  }
+}
+</script>
+
+<script>
+/* ===== 登录卡片 3D 跟随鼠标旋动（纯原生，不依赖 CDN） ===== */
+(function () {
+  const card = document.getElementById("loginCard");
+  if (!card) return;
+  const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const isTouch = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+  if (reduce || isTouch) return; // 无障碍/触屏不启用倾斜
+
+  const MAX = 6; // 最大倾斜角度（已调小，避免旋转过大）
+  let raf = null, tx = 0, ty = 0;
+
+  function onMove(e) {
+    const r = card.getBoundingClientRect();
+    const px = (e.clientX - r.left) / r.width;   // 0~1
+    const py = (e.clientY - r.top) / r.height;   // 0~1
+    // 方向（已修正）：鼠标靠右 → 右缘朝前；鼠标靠下 → 下缘朝前
+    ty = (px - 0.5) * 2 * MAX;      // 绕 Y 轴
+    tx = -(py - 0.5) * 2 * MAX;     // 绕 X 轴
+    // 高光跟随
+    card.style.setProperty("--mx", (px * 100).toFixed(1) + "%");
+    card.style.setProperty("--my", (py * 100).toFixed(1) + "%");
+    if (!raf) raf = requestAnimationFrame(apply);
+  }
+  function apply() {
+    card.style.transform = `rotateX(${tx.toFixed(2)}deg) rotateY(${ty.toFixed(2)}deg) translateZ(0)`;
+    raf = null;
+  }
+  function reset() {
+    card.style.transform = "rotateX(0deg) rotateY(0deg)";
+    if (raf) { cancelAnimationFrame(raf); raf = null; }
+  }
+  const wrap = document.querySelector(".container");
+  wrap.addEventListener("mousemove", onMove);
+  wrap.addEventListener("mouseleave", reset);
+})();
+
+/* ===== 忘记密码弹窗 3D 跟随鼠标旋动 ===== */
+(function () {
+  const card = document.getElementById("forgotCard");
+  const modal = document.getElementById("forgotModal");
+  if (!card || !modal) return;
+  const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const isTouch = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+  if (reduce || isTouch) return; // 无障碍/触屏不启用倾斜
+
+  const MAX = 6; // 最大倾斜角度（与登录卡片一致，已调小）
+  let raf = null, tx = 0, ty = 0;
+
+  function onMove(e) {
+    const r = card.getBoundingClientRect();
+    const px = (e.clientX - r.left) / r.width;   // 0~1
+    const py = (e.clientY - r.top) / r.height;   // 0~1
+    // 方向（已修正）：鼠标靠右 → 右缘朝前；鼠标靠下 → 下缘朝前
+    ty = (px - 0.5) * 2 * MAX;      // 绕 Y 轴
+    tx = -(py - 0.5) * 2 * MAX;     // 绕 X 轴
+    card.style.setProperty("--mx", (px * 100).toFixed(1) + "%");
+    card.style.setProperty("--my", (py * 100).toFixed(1) + "%");
+    if (!raf) raf = requestAnimationFrame(apply);
+  }
+  function apply() {
+    card.style.transform = `rotateX(${tx.toFixed(2)}deg) rotateY(${ty.toFixed(2)}deg) translateZ(0)`;
+    raf = null;
+  }
+  function reset() {
+    card.style.transform = "rotateX(0deg) rotateY(0deg)";
+    if (raf) { cancelAnimationFrame(raf); raf = null; }
+  }
+  modal.addEventListener("mousemove", onMove);
+  modal.addEventListener("mouseleave", reset);
+})();
+</script>
+
+<script>
+/* ===== 增强：滚动进度 + 按钮涟漪（与控制台一致） ===== */
+(function () {
+  const bar = document.getElementById("scrollProgress");
+  if (bar) {
+    const upd = () => {
+      const h = document.documentElement.scrollHeight - window.innerHeight;
+      bar.style.width = (h > 0 ? (window.scrollY / h) * 100 : 0) + "%";
+    };
+    window.addEventListener("scroll", upd, { passive: true });
+    window.addEventListener("resize", upd);
+    upd();
+  }
+  document.addEventListener("click", function (e) {
+    const btn = e.target.closest(".btn");
+    if (!btn) return;
+    const r = btn.getBoundingClientRect();
+    const size = Math.max(r.width, r.height);
+    const span = document.createElement("span");
+    span.className = "ripple";
+    span.style.width = span.style.height = size + "px";
+    span.style.left = (e.clientX - r.left - size / 2) + "px";
+    span.style.top = (e.clientY - r.top - size / 2) + "px";
+    btn.appendChild(span);
+    setTimeout(() => span.remove(), 600);
+  });
+})();
+</script>
+
+</body>
+</html>

@@ -10,8 +10,8 @@ import os
 import sys
 import threading
 import time
-import traceback
 import webbrowser
+import re
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -44,6 +44,7 @@ WEBUI_DIR = next((p for p in _WEBUI_CANDIDATES if p.is_dir()), _WEBUI_CANDIDATES
 from app.config import ConfigError, load_settings, load_task
 from app.history import AlreadyRunningError
 from app.main import run as run_sender, RunStopped
+from app.ai_text import generate_ai_text
 
 import webui_auth
 
@@ -315,6 +316,86 @@ def save_config(config: dict[str, Any], user: str | None = None) -> None:
     path.write_text(json.dumps(config, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
+def stream_logs_sse(handler) -> None:
+    """SSE 实时推送运行日志：先推送最近历史，再持续 tail run.log 推送新增行。
+    配合前端 EventSource 实现「无需手动刷新」的实时日志。"""
+    log_path = PROJECT_ROOT / "artifacts" / "run.log"
+    try:
+        handler.send_response(200)
+        handler.send_header("Content-Type", "text/event-stream; charset=utf-8")
+        handler.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+        handler.send_header("X-Accel-Buffering", "no")  # 关键：禁用反代(Nginx)缓冲，否则 SSE 会被攒批一次性返回
+        handler.end_headers()
+    except Exception:
+        return
+    wfile = handler.wfile
+
+    def _send(event: str, payload: str) -> bool:
+        try:
+            wfile.write(("event: %s\n" % event).encode("utf-8"))
+            wfile.write(("data: %s\n\n" % payload).encode("utf-8"))
+            wfile.flush()
+            return True
+        except Exception:
+            return False
+
+    # 1) 历史：最近 300 行
+    history = []
+    try:
+        if log_path.exists():
+            history = log_path.read_text(encoding="utf-8", errors="ignore").splitlines()[-300:]
+    except Exception:
+        history = []
+    if not _send("history", json.dumps(history, ensure_ascii=False)):
+        return
+
+    # 2) 持续 tail 新增内容
+    try:
+        pos = log_path.stat().st_size
+    except Exception:
+        pos = 0
+    start = time.time()
+    last_beat = start
+    while True:
+        try:
+            if getattr(wfile, "closed", False):
+                break
+            now = time.time()
+            if now - last_beat > 15:  # 心跳保活，避免 Nginx proxy_read_timeout 断开
+                try:
+                    wfile.write(b": heartbeat\n\n")
+                    wfile.flush()
+                except Exception:
+                    break
+                last_beat = now
+            if now - start > 3600:  # 安全上限：1 小时后自动结束，前端 EventSource 会自动重连
+                break
+            try:
+                size = log_path.stat().st_size
+            except Exception:
+                time.sleep(0.4)
+                continue
+            if size < pos:
+                pos = 0  # 文件被截断/轮转，从头开始
+            if size > pos:
+                try:
+                    with open(log_path, "r", encoding="utf-8", errors="ignore") as fh:
+                        fh.seek(pos)
+                        chunk = fh.read()
+                    pos = size
+                    for line in chunk.splitlines():
+                        if line.strip():
+                            if not _send("log", line):
+                                return
+                except Exception:
+                    pass
+            time.sleep(0.4)
+        except (BrokenPipeError, ConnectionResetError):
+            break
+        except Exception:
+            break
+
+
 def read_logs() -> list[str]:
     """读取最新日志"""
     log_path = PROJECT_ROOT / "artifacts" / "run.log"
@@ -327,6 +408,84 @@ def read_logs() -> list[str]:
         return []
 
 
+
+def count_renewed_today() -> int:
+    """统计今天实际发送成功的好友数量（按好友去重）。
+
+    火花一天只能续一次：同一好友一天内无论运行多少次都只算 1 个，结果最大不超过好友总数。
+    用日志关联法：每条「文案#N」归属其前最近一条「找到好友: X」；
+    干跑不发消息、没有「文案#」，自然不计入；某好友打开失败/发送失败也无「文案#」，不计入。
+    """
+    log_path = PROJECT_ROOT / "artifacts" / "run.log"
+    if not log_path.exists():
+        return 0
+    today = datetime.now().strftime("%Y-%m-%d")
+    sent_names: set[str] = set()
+    current: str | None = None
+    try:
+        with open(log_path, "r", encoding="utf-8", errors="ignore") as fh:
+            for line in fh:
+                if not line.startswith(today):
+                    continue
+                m = re.search(r"(?:找到好友|开始处理好友)[:：]\s*(.+)", line)
+                if m:
+                    current = m.group(1).strip()
+                    continue
+                if "文案#" in line and current:
+                    sent_names.add(current)
+    except Exception:
+        pass
+    return len(sent_names)
+
+
+def load_spark_days() -> dict:
+    """读取各好友当前火花天数（run 过程中 best-effort 采集）。"""
+    p = PROJECT_ROOT / "data" / "spark_days.json"
+    if not p.exists():
+        return {}
+    try:
+        return json.loads(p.read_text(encoding="utf-8") or "{}")
+    except Exception:
+        return {}
+
+
+def get_dashboard_stats(user: str | None) -> dict:
+    """控制台概览卡片所需的全部统计。"""
+    cfg = load_config_safe(user)
+    friends = cfg.get("friends", []) or []
+    total_friends = len(friends)
+    schedule = load_schedule()
+
+    membership = {"days": None, "permanent": False, "type": None}
+    if DEPLOY_MODE == "local":
+        membership = {"days": None, "permanent": True, "type": "permanent"}
+    else:
+        info = (webui_auth.get_user(user) or {}) if user else {}
+        exp = info.get("expires_at")
+        if exp:
+            try:
+                dt = datetime.fromisoformat(str(exp).replace("Z", "+00:00"))
+                days = max(0, (dt - datetime.now(dt.tzinfo)).days)
+                membership = {"days": days, "permanent": False, "type": info.get("membership_type")}
+            except Exception:
+                membership = {"days": None, "permanent": False, "type": None}
+        else:
+            membership = {"days": None, "permanent": False, "type": None}
+
+    spark = load_spark_days()
+    top = None
+    if spark:
+        name = max(spark, key=lambda k: (spark[k] or -1))
+        top = {"name": name, "days": spark[name]}
+
+    return {
+        "renewed_today": count_renewed_today(),
+        "total_friends": total_friends,
+        "schedule": schedule,
+        "membership": membership,
+        "spark_days": spark,
+        "top_spark": top,
+    }
 def update_state(user: str | None = None) -> None:
     """更新状态；登录态与配置均按当前用户隔离计算，不共享全局缓存。"""
     with STATE_LOCK:
@@ -586,22 +745,6 @@ def mark_login_complete() -> str:
     return "请通过登录链接在真机完成登录"
 
 
-def _append_run_log(msg: str) -> None:
-    """把一条消息追加写入运行日志文件，供前端「运行日志」面板展示。
-
-    即使任务在真正进入 run() 之前就失败（例如缺少登录态、配置错误），
-    也能在日志面板里看到原因，而不是一直显示「暂无日志」。
-    """
-    try:
-        log_path = PROJECT_ROOT / "artifacts" / "run.log"
-        log_path.parent.mkdir(parents=True, exist_ok=True)
-        ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        with open(log_path, "a", encoding="utf-8") as f:
-            f.write(f"{ts} ERROR {msg}\n")
-    except Exception:
-        pass
-
-
 async def do_run(dry_run: bool, user: str | None = None) -> None:
     """执行发送流程（按当前用户加载独立的登录态与配置，实现多租户隔离）"""
     global STOP_EVENT
@@ -622,7 +765,6 @@ async def do_run(dry_run: bool, user: str | None = None) -> None:
             with STATE_LOCK:
                 STATE["run_status"] = "failed"
                 STATE["run_message"] = msg
-            _append_run_log(msg)
             print(f"[RUN] 用户 {user} 缺少有效 Playwright storage state，中止执行")
             return
 
@@ -651,18 +793,15 @@ async def do_run(dry_run: bool, user: str | None = None) -> None:
         with STATE_LOCK:
             STATE["run_status"] = "failed"
             STATE["run_message"] = f"配置错误: {exc}"
-        _append_run_log(f"配置错误: {exc}")
     except RunStopped as exc:
         with STATE_LOCK:
             STATE["run_status"] = "success"
             STATE["run_message"] = "已手动停止，剩余好友未发送"
-        _append_run_log("已手动停止，剩余好友未发送")
         print(f"[RUN] 用户已手动停止发送任务: {exc}")
     except Exception as exc:
         with STATE_LOCK:
             STATE["run_status"] = "failed"
             STATE["run_message"] = f"运行异常: {exc}"
-        _append_run_log("运行异常: " + traceback.format_exc())
     finally:
         # 不论正常结束/异常/停止，都清空停止信号，避免影响下次运行
         STOP_EVENT = None
@@ -966,6 +1105,12 @@ class GUIHandler(BaseHTTPRequestHandler):
                 self.send_json(load_schedule())
             elif path == "/api/logs":
                 self.send_json({"logs": read_logs()})
+            elif path == "/api/logs/stream":
+                stream_logs_sse(self)
+                return
+            elif path == "/api/stats":
+                self.send_json(get_dashboard_stats(user))
+
             elif path == "/api/admin/codes":
                 if not webui_auth.is_admin(user):
                     self.send_json({"error": "无权限"}, 403)
@@ -1232,6 +1377,18 @@ class GUIHandler(BaseHTTPRequestHandler):
                 config = self.read_body()
                 save_config(config, user)
                 self.send_json({"ok": True})
+            elif path == "/api/ai-test":
+                # 测试 AI 文案接口：body {"ai": {...}}；不落盘，仅验证连通与生成
+                body = self.read_body()
+                ai_cfg = body.get("ai") if isinstance(body, dict) else None
+                if not isinstance(ai_cfg, dict):
+                    self.send_json({"error": "缺少 ai 配置"}, 400)
+                    return
+                try:
+                    text = generate_ai_text(ai_cfg)
+                    self.send_json({"ok": True, "text": text})
+                except Exception as exc:  # noqa: BLE001
+                    self.send_json({"error": str(exc)}, 400)
             elif path == "/api/schedule":
                 schedule = self.read_body()
                 save_schedule(schedule)

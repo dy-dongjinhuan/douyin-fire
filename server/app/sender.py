@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import random
 import secrets
 from urllib.parse import urlsplit
@@ -9,6 +10,12 @@ from playwright.async_api import Page
 from app.douyin import DouyinChat, PageOperationError, first_visible
 from app.models import Message, Sticker
 from app.selectors import IMAGE_INPUTS, MESSAGE_INPUTS, STICKER_BUTTONS, STICKER_PANELS
+
+
+# 单个 Playwright 动作（click 等）的硬超时，避免默认 30s 在重绘页面上无尽等待导致卡死。
+ACTION_TIMEOUT_MS = 8_000
+# 同步读 DOM 文本（inner_text 替代）的硬超时上限。
+DOM_READ_TIMEOUT_S = 2.0
 
 
 SEND_BUTTONS = (
@@ -30,7 +37,7 @@ async def _trigger_send(page: Page) -> None:
         except Exception:
             continue
     if button is not None:
-        await button.click()
+        await button.click(timeout=ACTION_TIMEOUT_MS)
     else:
         await page.keyboard.press("Enter")
 
@@ -84,7 +91,7 @@ async def send_message(page: Page, chat: DouyinChat, message: Message, stickers:
 async def send_text(chat: DouyinChat, content: str) -> None:
     editor = await chat.message_input()
     page = editor.page
-    await editor.click()
+    await editor.click(timeout=ACTION_TIMEOUT_MS)
     await page.keyboard.insert_text(content)
     try:
         await page.wait_for_function(
@@ -149,22 +156,31 @@ async def send_douyin_sticker(page: Page, sticker: Sticker) -> None:
     before = await _mark_latest_outgoing_message(page)
     try:
         button = await first_visible(page, STICKER_BUTTONS)
-        await button.click(force=True)
+        await button.click(force=True, timeout=ACTION_TIMEOUT_MS)
         panel = await first_visible(page, STICKER_PANELS)
 
         if sticker.category:
             category = panel.get_by_text(sticker.category, exact=True)
             if await category.count() and await category.first.is_visible():
-                await category.first.click()
+                await category.first.click(timeout=ACTION_TIMEOUT_MS)
 
         name = sticker.accessible_name or sticker.name
         item = panel.locator('.emojiEmojiItememojiItem').filter(has_text=name)
         for index in range(await item.count()):
             candidate = item.nth(index)
             description = candidate.locator('.emojiEmojiItememojiItemDesc')
-            if await description.count() and (await description.first.inner_text()).strip() == name:
-                await _click_and_confirm_sticker(page, candidate, before, name)
-                return
+            if await description.count():
+                try:
+                    # 用 evaluate 同步读文本，避免 inner_text 在重绘面板上的“稳定”等待卡死。
+                    desc_text = await asyncio.wait_for(
+                        description.first.evaluate("el => (el.innerText || '').trim()"),
+                        timeout=DOM_READ_TIMEOUT_S,
+                    )
+                except Exception:
+                    desc_text = ""
+                if (desc_text or "").strip() == name:
+                    await _click_and_confirm_sticker(page, candidate, before, name)
+                    return
 
         candidates = (
             panel.get_by_role("img", name=name, exact=True),
@@ -209,7 +225,7 @@ async def _mark_latest_outgoing_message(page: Page) -> tuple[str, str]:
 
 async def _click_and_confirm_sticker(page: Page, item, before: tuple[str, str], name: str) -> None:
     resource_key = await _sticker_resource_key(item)
-    await item.click(force=True)
+    await item.click(force=True, timeout=ACTION_TIMEOUT_MS)
     try:
         await _confirm_sticker_sent(page, before, name, resource_key)
     except PageOperationError:

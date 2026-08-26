@@ -1,0 +1,51 @@
+{
+  "name": "douyin-fire",
+  "version": "1.1.1",
+  "description": "抖音续火花管理面板 · 本地一键部署版 / Local one-click deployment for the Douyin (TikTok CN) streak-keeping automation panel.",
+  "bin": {
+    "douyin-fire": "bin/douyin-fire.js"
+  },
+  "files": [
+    "gui.py",
+    "webui_auth.py",
+    "email_code.py",
+    "run.py",
+    "requirements.txt",
+    "config.example.json",
+    ".env.example",
+    "install.bat",
+    "start.bat",
+    "stop.bat",
+    "setup.sh",
+    "app",
+    "webui",
+    "scripts",
+    "bin",
+    "data",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "douyin",
+    "抖音",
+    "续火花",
+    "streak",
+    "automation",
+    "cookie",
+    "panel",
+    "playwright"
+  ],
+  "author": "dy-dongjinhuan",
+  "license": "MIT",
+  "engines": {
+    "node": ">=16"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dy-dongjinhuan/douyin-fire.git"
+  },
+  "homepage": "https://github.com/dy-dongjinhuan/douyin-fire",
+  "bugs": {
+    "url": "https://github.com/dy-dongjinhuan/douyin-fire/issues"
+  }
+}
