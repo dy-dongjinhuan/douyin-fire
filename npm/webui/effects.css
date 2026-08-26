@@ -4,6 +4,17 @@
    非侵入式：只增不强改，类名前缀 fx- 避免冲突
    ========================================================= */
 
+/* 全局滚动条：抖音红滑块 + 透明轨道（去白色） */
+::-webkit-scrollbar{ width:10px; height:10px; }
+::-webkit-scrollbar-track{ background:transparent; }
+::-webkit-scrollbar-thumb{
+  background:#fe2c55;
+  border-radius:999px;
+  border:2px solid rgba(0,0,0,.55);
+}
+::-webkit-scrollbar-thumb:hover{ background:#ff5c7c; }
+*{ scrollbar-width:thin; scrollbar-color:#fe2c55 transparent; }
+
 /* 卡片光晕层（配合 JS 的 tilt 跟随） */
 .fx-glow{
   position:absolute; inset:0; border-radius:inherit;

@@ -62,7 +62,7 @@
         var s = Math.abs(p.vx) + Math.abs(p.vy);
         if (s > maxSpeed) maxSpeed = s;
       }
-      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+      ctx.strokeStyle = 'rgba(255,150,175,0.06)';
       ctx.lineWidth = 0.5;
       var gap = 10;
       for (var r = 0; r < rows; r++)
@@ -81,9 +81,9 @@
           var ux2 = dx2/d2, uy2 = dy2/d2;
           ctx.beginPath(); ctx.moveTo(a2.x+gap*ux2, a2.y+gap*uy2); ctx.lineTo(b2.x-gap*ux2, b2.y-gap*uy2); ctx.stroke();
         }
-      ctx.fillStyle = 'rgba(255,255,255,0.12)';
+      ctx.fillStyle = 'rgba(255,150,175,0.10)';
       for (var j = 0; j < points.length; j++){
-        var p = points[j], size = 1.6, alpha = 0.12;
+        var p = points[j], size = 1.6, alpha = 0.10;
         if (!isNaN(mx) && !isNaN(my)){
           var dx = p.x-mx, dy = p.y-my, d = Math.sqrt(dx*dx+dy*dy);
           var t = Math.max(0, 1 - d/MOUSE_RADIUS);
