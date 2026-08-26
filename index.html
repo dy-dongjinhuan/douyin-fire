@@ -29,7 +29,7 @@
   html,body{ margin:0; padding:0; }
   body{
     font-family:var(--font);
-    background:#060913;
+    background:#0a0709;
     color:var(--ink);
     font-size:15px;
     line-height:1.6;
@@ -38,21 +38,32 @@
   }
   a{ color:inherit; text-decoration:none; }
 
+  /* ============ 全局滚动条：抖音红滑块 + 透明轨道（去白色） ============ */
+  ::-webkit-scrollbar{ width:10px; height:10px; }
+  ::-webkit-scrollbar-track{ background:transparent; }
+  ::-webkit-scrollbar-thumb{
+    background:var(--accent);
+    border-radius:999px;
+    border:2px solid rgba(0,0,0,.55);
+  }
+  ::-webkit-scrollbar-thumb:hover{ background:var(--accent-2); }
+  *{ scrollbar-width:thin; scrollbar-color:var(--accent) transparent; }
+
   /* ============ 全页固定背景：深蓝夜色 + 星座粒子 + 光晕 ============ */
   .bg{
     position:fixed; inset:0; z-index:0; pointer-events:none;
     background:
-      radial-gradient(1000px 620px at 84% -8%, rgba(91,157,255,.15), transparent 55%),
-      radial-gradient(900px 560px at -12% 20%, rgba(167,139,250,.10), transparent 52%),
-      radial-gradient(820px 520px at 112% 72%, rgba(254,44,85,.07), transparent 52%),
-      linear-gradient(180deg, #060913 0%, #0a1022 45%, #060913 100%);
+      radial-gradient(1000px 620px at 84% -8%, rgba(255,150,175,.10), transparent 55%),
+      radial-gradient(900px 560px at -12% 20%, rgba(255,130,160,.07), transparent 52%),
+      radial-gradient(820px 520px at 112% 72%, rgba(255,120,150,.05), transparent 52%),
+      linear-gradient(180deg, #0a0709 0%, #12090d 45%, #0a0709 100%);
   }
   .bg canvas{ position:absolute; inset:0; width:100%; height:100%; }
   .bg .blob{ position:absolute; border-radius:50%; filter:blur(80px); }
-  .bg .blob.b1{ width:560px; height:560px; left:6%; top:-140px; background:radial-gradient(circle,#1A3870 0%,transparent 70%); opacity:.45; }
-  .bg .blob.b2{ width:640px; height:400px; left:40%; top:32%; background:radial-gradient(ellipse at center,#2D5F9E 0%,#1A3870 42%,transparent 70%); opacity:.4; }
-  .bg .blob.b3{ width:520px; height:520px; right:4%; top:58%; background:radial-gradient(circle,#4A8AC4 0%,#2D5F9E 30%,transparent 70%); opacity:.28; }
-  .bg .blob.b4{ width:420px; height:420px; left:12%; top:78%; background:radial-gradient(circle,rgba(254,44,85,.35) 0%,transparent 70%); opacity:.18; }
+  .bg .blob.b1{ width:560px; height:560px; left:6%; top:-140px; background:radial-gradient(circle,#3a1624 0%,transparent 70%); opacity:.45; }
+  .bg .blob.b2{ width:640px; height:400px; left:40%; top:32%; background:radial-gradient(ellipse at center,#522232 0%,#3a1624 42%,transparent 70%); opacity:.38; }
+  .bg .blob.b3{ width:520px; height:520px; right:4%; top:58%; background:radial-gradient(circle,#8a3a50 0%,#522232 30%,transparent 70%); opacity:.26; }
+  .bg .blob.b4{ width:420px; height:420px; left:12%; top:78%; background:radial-gradient(circle,rgba(255,150,175,.25) 0%,transparent 70%); opacity:.14; }
 
   /* ============ 导航（sticky 平滑收缩，复刻 DeepSeek 结构） ============ */
   .hnav{
@@ -67,7 +78,7 @@
     padding:10px 14px;
     border:1px solid rgba(255,255,255,.09);
     border-radius:16px;
-    background:rgba(10,14,24,.5);
+    background:rgba(12,7,9,.55);
     backdrop-filter:blur(16px);
     -webkit-backdrop-filter:blur(16px);
     box-shadow:0 8px 30px rgba(0,0,0,.3);
@@ -105,6 +116,19 @@
   }
   .nav-menu a:hover{ color:#fff; background:rgba(255,255,255,.07); transform:translateY(-1px); }
   .spacer{ flex:1; }
+  .nav-cta{
+    display:inline-flex; align-items:center; gap:7px;
+    padding:9px 18px; border-radius:16px;
+    background:#fff;
+    color:#11141c; font-size:13.5px; font-weight:600; white-space:nowrap;
+    border:1px solid #fff;
+    box-shadow:0 4px 16px rgba(0,0,0,.28);
+    transition:transform .25s var(--ease-out), box-shadow .3s ease, background .3s ease, border-radius .55s cubic-bezier(.22,.61,.36,1);
+  }
+  .nav-cta:hover{ background:#f1f2f6; transform:translateY(-1px); box-shadow:0 8px 24px rgba(0,0,0,.4); }
+  .nav-cta:active{ transform:scale(.97); }
+  .nav-cta svg{ width:15px; height:15px; transition:transform .3s var(--ease-out); }
+  .nav-cta:hover svg{ transform:translateX(2px); }
   .menu-btn{
     display:none; width:38px; height:38px; border-radius:10px;
     border:1px solid rgba(255,255,255,.1); background:rgba(255,255,255,.05);
@@ -118,7 +142,7 @@
     display:none; flex-direction:column; gap:4px;
     margin-top:8px; padding:10px;
     border:1px solid rgba(255,255,255,.09); border-radius:14px;
-    background:rgba(10,14,24,.7); backdrop-filter:blur(16px);
+    background:rgba(12,7,9,.75); backdrop-filter:blur(16px);
   }
   .mobile-menu.open{ display:flex; animation:fadeIn .25s ease; }
   .mobile-menu a{ padding:11px 14px; border-radius:10px; color:rgba(255,255,255,.72); font-size:14px; transition:color .2s, background .2s; }
@@ -129,16 +153,18 @@
   .hnav.scrolled .nav-inner{
     width:600px;
     border-radius:999px;
-    background:rgba(10,14,24,.78);
+    background:rgba(12,7,9,.8);
     box-shadow:0 12px 40px rgba(0,0,0,.45);
   }
   .hnav.scrolled .brand-name{ opacity:0; max-width:0; margin:0; }
   .hnav.scrolled .brand-badge{ opacity:0; max-width:0; margin:0; padding-left:0; padding-right:0; }
+  .hnav.scrolled .nav-cta{ border-radius:999px; }
 
   @media(max-width:880px){
     .nav-menu{ display:none; }
     .menu-btn{ display:inline-flex; }
-    .hnav.scrolled .nav-inner{ width:200px; }
+    .hnav.scrolled .nav-inner{ width:auto; }
+    .nav-cta{ padding:8px 14px; font-size:13px; }
   }
 
   /* ============ Hero ============ */
@@ -146,14 +172,14 @@
     position:relative; z-index:2;
     max-width:1280px; margin:0 auto;
     display:grid;
-    grid-template-columns:1.04fr .96fr;
-    gap:64px;
+    grid-template-columns:1fr;
+    gap:0;
     align-items:center;
-    padding:80px 36px 120px;
+    padding:80px 36px 140px;
   }
   /* 粒子火花 logo（hero 中央装饰） */
   .spark-logo{ position:absolute; z-index:1; pointer-events:none; left:50%; top:52%; transform:translate(-50%,-50%); width:520px; height:520px; opacity:.9; }
-  .hero-left, .hero-right{ position:relative; z-index:2; }
+  .hero-left{ position:relative; z-index:2; max-width:760px; margin:0; text-align:left; }
 
   .eyebrow{
     display:inline-flex; align-items:center; gap:9px;
@@ -182,11 +208,11 @@
   }
   .hero p.desc{
     font-size:16.5px; color:rgba(255,255,255,.64);
-    max-width:52ch; line-height:1.78; margin:0 0 14px;
+    max-width:56ch; line-height:1.78; margin:0 0 14px;
   }
-  .hero p.desc + p.desc{ margin-bottom:36px; }
+  .hero p.desc + p.desc{ margin-bottom:34px; }
 
-  .cta{ display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+  .cta{ display:flex; gap:12px; flex-wrap:wrap; align-items:center; justify-content:flex-start; }
 
   /* ============ 按钮（涟漪 + 悬浮 + 按压动效） ============ */
   .btn{
@@ -222,7 +248,7 @@
 
   /* ============ 终端窗口 ============ */
   .terminal{
-    background:rgba(10,14,24,.6);
+    background:rgba(12,7,9,.6);
     border:1px solid rgba(255,255,255,.10);
     border-radius:var(--radius);
     backdrop-filter:blur(18px);
@@ -289,7 +315,7 @@
   .feat:hover{ border-color:var(--line-strong); background:var(--card-hover); }
   .feat .fi{
     width:44px; height:44px; border-radius:12px;
-    background:linear-gradient(135deg,rgba(254,44,85,.18),rgba(255,122,92,.12));
+    background:linear-gradient(135deg,rgba(255,150,175,.18),rgba(255,120,150,.10));
     color:var(--accent-2);
     display:grid; place-items:center; margin-bottom:20px;
     transition:transform .35s var(--ease-out);
@@ -369,8 +395,6 @@
   @media(max-width:900px){
     .hero{ grid-template-columns:1fr; gap:48px; padding:64px 24px 90px; }
     .hero h1{ font-size:44px; }
-    .hero-right{ order:-1; }
-    .terminal{ max-width:540px; }
     .spark-logo{ width:360px; height:360px; }
   }
   @media(max-width:640px){
@@ -406,8 +430,6 @@
       </a>
 
       <nav class="nav-menu" id="navMenu">
-        <a href="https://github.com/dy-dongjinhuan/douyin-fire" target="_blank" rel="noopener">GitHub</a>
-        <a href="https://www.npmjs.com/package/douyin-fire" target="_blank" rel="noopener">NPM</a>
         <a href="#cap">核心能力</a>
         <a href="#how">工作原理</a>
         <a href="#trust">信任与安全</a>
@@ -415,14 +437,17 @@
 
       <div class="spacer"></div>
 
+      <a class="nav-cta" href="/app">
+        前往控制台
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </a>
+
       <button class="menu-btn" id="menuBtn" aria-label="打开菜单">
         <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
       </button>
     </div>
 
     <div class="mobile-menu" id="mobileMenu">
-      <a href="https://github.com/dy-dongjinhuan/douyin-fire" target="_blank" rel="noopener">GitHub</a>
-      <a href="https://www.npmjs.com/package/douyin-fire" target="_blank" rel="noopener">NPM</a>
       <a href="#cap">核心能力</a>
       <a href="#how">工作原理</a>
       <a href="#trust">信任与安全</a>
@@ -434,49 +459,13 @@
     <canvas class="spark-logo" id="spark"></canvas>
 
     <div class="hero-left">
-      <span class="eyebrow enter d1"><span class="pulse"></span> Douyin Fire 本地版</span>
+      <span class="eyebrow enter d1"><span class="pulse"></span> Douyin Fire 服务器版</span>
       <h1 class="enter d2">让每一段<span class="em">火花</span>，<br>都不被遗忘。</h1>
       <p class="desc enter d3">火花续连帮你安静地维系抖音里那些重要的人。设置一次，每天自动续上火花——没有打扰，没有遗忘，只有被认真对待的关系。</p>
       <p class="desc enter d3">一键启动、免登录本地运行，登录态与好友列表只保存在你自己的设备上。</p>
       <div class="cta enter d4">
-        <a href="https://github.com/dy-dongjinhuan/douyin-fire" target="_blank" rel="noopener" class="btn btn-primary">
-          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
-          查看 GitHub
-        </a>
-        <a href="https://www.npmjs.com/package/douyin-fire" target="_blank" rel="noopener" class="btn btn-secondary">
-          <svg viewBox="0 0 24 24" fill="#CB3837"><path d="M1.763 0C.786 0 0 .786 0 1.763v20.474C0 23.214.786 24 1.763 24h20.474c.977 0 1.763-.786 1.763-1.763V1.763C24 .786 23.214 0 22.237 0zM5.13 5.323l13.837.019-.009 13.836h-3.464l.01-10.382h-3.456L12.04 19.17H5.113z"/></svg>
-          NPM 包
-        </a>
+        <a href="/app" class="btn btn-primary">前往控制台</a>
         <a href="#how" class="btn btn-ghost">了解原理 →</a>
-      </div>
-    </div>
-
-    <div class="hero-right enter d5">
-      <div class="terminal">
-        <div class="terminal-tabs">
-          <button class="active" data-tab="use">一键使用</button>
-          <button data-tab="install">一键安装</button>
-        </div>
-        <div class="terminal-body">
-          <div class="tab-content active" data-tab="use">
-            <div class="line">
-              <div class="cmd"><span class="prompt">$</span><span class="code" data-cmd="npx douyin-fire">npx douyin-fire</span></div>
-              <button class="copy-btn" aria-label="复制">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                <span>复制</span>
-              </button>
-            </div>
-          </div>
-          <div class="tab-content" data-tab="install">
-            <div class="line">
-              <div class="cmd"><span class="prompt">$</span><span class="code" data-cmd="npm install -g douyin-fire">npm install -g douyin-fire</span></div>
-              <button class="copy-btn" aria-label="复制">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                <span>复制</span>
-              </button>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   </section>
@@ -583,7 +572,7 @@
           <p style="color:var(--ink-3);font-size:13px;line-height:1.6;margin:0">让每一段火花，都不被时间吹灭。</p>
         </div>
         <div class="col"><h5>产品</h5><a href="#cap">核心能力</a><a href="#how">工作原理</a><a href="#trust">信任与安全</a></div>
-        <div class="col"><h5>资源</h5><a href="https://github.com/dy-dongjinhuan/douyin-fire" target="_blank" rel="noopener">GitHub</a><a href="https://www.npmjs.com/package/douyin-fire" target="_blank" rel="noopener">NPM</a></div>
+        <div class="col"><h5>资源</h5><a href="/app">前往控制台</a></div>
       </div>
       <div class="fine">
         <span>© 2026 火花续连 · 用心维系每一段关系</span>
@@ -603,9 +592,9 @@
 
     var DPR = Math.min(window.devicePixelRatio || 1, 2);
     var SPACING = 90, MOUSE_RADIUS = 140;
-    var lineColor = 'rgba(255, 255, 255, ';
-    var dotColor  = 'rgba(255, 255, 255, ';
-    var lineOpacity = 0.08, dotOpacity = 0.16;
+    var lineColor = 'rgba(255, 150, 175, ';
+    var dotColor  = 'rgba(255, 150, 175, ';
+    var lineOpacity = 0.08, dotOpacity = 0.15;
     var points = [], cols = 0, rows = 0, W = 0, H = 0;
     var mouse = { x: NaN, y: NaN };
     var running = true, raf = 0, last = 0, FPS = 1000 / 60, resizeTimer = null;
@@ -884,34 +873,6 @@
         glow.style.opacity = 0;
         card.style.transform = 'perspective(800px) rotateX(0deg) rotateY(0deg) scale(1)';
         card.style.transition = 'transform 0.4s ease-out';
-      });
-    });
-  })();
-
-  // ============ 5. 终端 Tab + 复制 ============
-  (function(){
-    var tabs = document.querySelectorAll('.terminal-tabs button');
-    var contents = document.querySelectorAll('.tab-content');
-    tabs.forEach(function(tab){
-      tab.addEventListener('click', function(){
-        var key = tab.getAttribute('data-tab');
-        tabs.forEach(function(b){ b.classList.toggle('active', b === tab); });
-        contents.forEach(function(c){ c.classList.toggle('active', c.getAttribute('data-tab') === key); });
-      });
-    });
-    document.querySelectorAll('.copy-btn').forEach(function(btn){
-      btn.addEventListener('click', function(){
-        var code = btn.closest('.tab-content').querySelector('.code');
-        var text = code ? code.getAttribute('data-cmd') : '';
-        function done(){
-          var span = btn.querySelector('span');
-          var old = span.textContent;
-          span.textContent = '已复制';
-          setTimeout(function(){ span.textContent = old; }, 1500);
-        }
-        if (navigator.clipboard && navigator.clipboard.writeText){
-          navigator.clipboard.writeText(text).then(done).catch(done);
-        } else { done(); }
       });
     });
   })();
